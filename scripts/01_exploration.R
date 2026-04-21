@@ -6,8 +6,6 @@ library(lubridate)
 df <- read_csv("data/raw/Data_Arbre.csv", show_col_types = FALSE,
                col_types = cols(.default = col_character()))
 
-dir.create("figures", showWarnings = FALSE)
-
 cat("dim:", dim(df), "\n\n")
 print(names(df))
 
@@ -64,10 +62,3 @@ cat("plantation:", format(min(dp,na.rm=T)), "->", format(max(dp,na.rm=T)),
 cat("abattage  :", format(min(da,na.rm=T)), "->", format(max(da,na.rm=T)),
     " NA=", sum(is.na(da)), "\n")
 
-# petits histos de diag (on les reprendra propres apres nettoyage)
-ggsave("figures/diag_haut_tot.png",
-       ggplot(tibble(h=h), aes(h)) + geom_histogram(bins=60) + theme_minimal(),
-       width=7, height=4, dpi=120)
-ggsave("figures/diag_tronc_diam.png",
-       ggplot(tibble(d=d), aes(d)) + geom_histogram(bins=60) + theme_minimal(),
-       width=7, height=4, dpi=120)
