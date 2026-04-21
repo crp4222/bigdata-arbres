@@ -1,7 +1,6 @@
 ---
 title: "Projet Big Data - Patrimoine arbore de Saint-Quentin"
 subtitle: "Fonctionnalites 1 & 2 : exploration, nettoyage, visualisation"
-author: "Elie"
 date: "`r format(Sys.Date(), '%d/%m/%Y')`"
 output:
   pdf_document:
