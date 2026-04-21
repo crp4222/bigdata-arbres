@@ -1,7 +1,7 @@
 # Projet Big Data - Patrimoine arbore de Saint-Quentin
 
-Partie Big Data du projet A3 (FISA4).
-Mon perimetre : **Fonctionnalites 1 & 2** (exploration / nettoyage / graphiques).
+Partie Big Data
+(exploration / nettoyage / graphiques).
 
 ## Organisation
 
