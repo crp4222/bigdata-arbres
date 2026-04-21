@@ -1,0 +1,14 @@
+annee de reference : 2020
+lignes initiales : 11421
+lignes finales   : 11419
+
+regles appliquees :
+- normalisation casse/accents des variables categorielles
+- 'RAS' et chaines vides -> NA
+- hauteurs/diametre/age a 0 -> NA (valeurs impossibles)
+- age_estim > 200 -> NA (saisie d'annee au lieu de l'age)
+- tronc_diam > 400 cm -> NA
+- haut_tronc > haut_tot -> NA
+- dte_plantation en 1970-01-01 -> NA (valeur par defaut)
+- suppression des lignes sans X/Y
+- age_calc = annee_ref - annee_plantation

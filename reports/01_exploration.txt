@@ -1,0 +1,218 @@
+dim: 11421 37 
+
+ [1] "X"                         "Y"                        
+ [3] "OBJECTID"                  "created_date"             
+ [5] "created_user"              "src_geo"                  
+ [7] "clc_quartier"              "clc_secteur"              
+ [9] "id_arbre"                  "haut_tot"                 
+[11] "haut_tronc"                "tronc_diam"               
+[13] "fk_arb_etat"               "fk_stadedev"              
+[15] "fk_port"                   "fk_pied"                  
+[17] "fk_situation"              "fk_revetement"            
+[19] "commentaire_environnement" "dte_plantation"           
+[21] "age_estim"                 "fk_prec_estim"            
+[23] "clc_nbr_diag"              "dte_abattage"             
+[25] "fk_nomtech"                "last_edited_user"         
+[27] "last_edited_date"          "villeca"                  
+[29] "nomfrancais"               "nomlatin"                 
+[31] "GlobalID"                  "CreationDate"             
+[33] "Creator"                   "EditDate"                 
+[35] "Editor"                    "feuillage"                
+[37] "remarquable"              
+
+types:
+                        X                         Y                  OBJECTID 
+                "numeric"                 "numeric"                 "numeric" 
+             created_date              created_user                   src_geo 
+              "character"               "character"               "character" 
+             clc_quartier               clc_secteur                  id_arbre 
+              "character"               "character"                 "numeric" 
+                 haut_tot                haut_tronc                tronc_diam 
+                "numeric"                 "numeric"                 "numeric" 
+              fk_arb_etat               fk_stadedev                   fk_port 
+              "character"               "character"               "character" 
+                  fk_pied              fk_situation             fk_revetement 
+              "character"               "character"               "character" 
+commentaire_environnement            dte_plantation                 age_estim 
+              "character"               "character"                 "numeric" 
+            fk_prec_estim              clc_nbr_diag              dte_abattage 
+                "numeric"                 "numeric"               "character" 
+               fk_nomtech          last_edited_user          last_edited_date 
+              "character"               "character"               "character" 
+                  villeca               nomfrancais                  nomlatin 
+              "character"               "character"               "character" 
+                 GlobalID              CreationDate                   Creator 
+              "character"               "character"               "character" 
+                 EditDate                    Editor                 feuillage 
+              "character"               "character"               "character" 
+              remarquable 
+              "character" 
+
+NA / RAS / 0 :
+# A tibble: 37 × 6
+   col                          na   ras  zero  uniq pct_na
+   <chr>                     <int> <int> <int> <int>  <dbl>
+ 1 X                             2     0     0 11249    0  
+ 2 Y                             2     0     0 11247    0  
+ 3 OBJECTID                      0     0     0 11421    0  
+ 4 created_date                506     0     0  1177    4.4
+ 5 created_user                596     0     0     5    5.2
+ 6 src_geo                     928     0     0     6    8.1
+ 7 clc_quartier                494     0     0    12    4.3
+ 8 clc_secteur                  16     0     0   308    0.1
+ 9 id_arbre                     14     0     3   585    0.1
+10 haut_tot                     14     0   158    40    0.1
+11 haut_tronc                   15     0  1084    27    0.1
+12 tronc_diam                   28     0   159   285    0.2
+13 fk_arb_etat                  11     0     0     7    0.1
+14 fk_stadedev                 205     0     0     7    1.8
+15 fk_port                     186     0     0    17    1.6
+16 fk_pied                     143     0     0    11    1.3
+17 fk_situation                 19     0     0     4    0.2
+18 fk_revetement              1022     0     0     3    8.9
+19 commentaire_environnement   846  9902     0   138    7.4
+20 dte_plantation             9838     0     0    57   86.1
+21 age_estim                   853     0   168    35    7.5
+22 fk_prec_estim               962     0   279    12    8.4
+23 clc_nbr_diag               2969     0  7707     6   26  
+24 dte_abattage              10620     0     0   102   93  
+25 fk_nomtech                  109   155     0   241    1  
+26 last_edited_user            598     0     0     5    5.2
+27 last_edited_date            597     0     0  1826    5.2
+28 villeca                     105     0     0     3    0.9
+29 nomfrancais                  17   156     0   242    0.1
+30 nomlatin                     17   156     0   242    0.1
+31 GlobalID                      0     0     0 11421    0  
+32 CreationDate                594     0     0     7    5.2
+33 Creator                     598     0     0     3    5.2
+34 EditDate                    598     0     0    93    5.2
+35 Editor                      598     0     0     3    5.2
+36 feuillage                   196     0     0     3    1.7
+37 remarquable                  21     0     0     3    0.2
+haut_tot min=0 med=8 moy=10.2 max=37 NA=14
+haut_tronc min=0 med=2 moy=2.6 max=16 NA=15
+tronc_diam min=0 med=89 moy=94.4 max=565 NA=28
+age_estim min=0 med=30 moy=31.2 max=2010 NA=853
+clc_nbr_diag min=0 med=0 moy=0.1 max=4 NA=2969
+
+ fk_arb_etat 
+# A tibble: 7 × 2
+  fk_arb_etat      n
+  <chr>        <int>
+1 EN PLACE     10382
+2 SUPPRIMÉ       450
+3 Essouché       207
+4 REMPLACÉ       195
+5 ABATTU         114
+6 Non essouché    62
+7 <NA>            11
+
+ fk_stadedev 
+# A tibble: 7 × 2
+  fk_stadedev     n
+  <chr>       <int>
+1 adulte       6046
+2 jeune        4116
+3 Jeune         504
+4 Adulte        429
+5 <NA>          205
+6 vieux          68
+7 senescent      53
+
+ fk_port 
+# A tibble: 17 × 2
+   fk_port                  n
+   <chr>                <int>
+ 1 semi libre            6935
+ 2 libre                 1255
+ 3 Libre                  757
+ 4 réduit relâché         606
+ 5 tête de chat           396
+ 6 rideau                 267
+ 7 architecturé           248
+ 8 réduit                 223
+ 9 cépée                  198
+10 <NA>                   186
+11 tête de chat relaché   157
+12 étêté                  112
+13 Semi libre              37
+14 têtard                  30
+15 Couronne                11
+16 têtard relâché           2
+17 couronné                 1
+
+ fk_pied 
+# A tibble: 11 × 2
+   fk_pied                      n
+   <chr>                    <int>
+ 1 gazon                     6606
+ 2 Bande de terre            1301
+ 3 fosse arbre               1252
+ 4 Terre                      825
+ 5 terre                      750
+ 6 Revetement non permeable   475
+ 7 <NA>                       143
+ 8 toile tissée                28
+ 9 végétation                  19
+10 bande de terre              14
+11 Bac de plantation            8
+
+ fk_situation 
+# A tibble: 4 × 2
+  fk_situation     n
+  <chr>        <int>
+1 Alignement    6557
+2 Groupe        3812
+3 Isolé         1033
+4 <NA>            19
+
+ fk_revetement 
+# A tibble: 3 × 2
+  fk_revetement     n
+  <chr>         <int>
+1 Non           10159
+2 <NA>           1022
+3 Oui             240
+
+ feuillage 
+# A tibble: 3 × 2
+  feuillage     n
+  <chr>     <int>
+1 Feuillu    9643
+2 Conifère   1582
+3 <NA>        196
+
+ remarquable 
+# A tibble: 3 × 2
+  remarquable     n
+  <chr>       <int>
+1 Non         11290
+2 Oui           110
+3 <NA>           21
+
+ clc_quartier 
+# A tibble: 12 × 2
+   clc_quartier                        n
+   <chr>                           <int>
+ 1 Quartier Saint-Martin - Oëstres  2009
+ 2 Quartier Remicourt               1767
+ 3 Quartier du faubourg d'Isle      1715
+ 4 Quartier de l'Europe             1428
+ 5 Quartier du Vermandois           1416
+ 6 Quartier Saint-Jean               746
+ 7 Quartier du Centre-Ville          740
+ 8 OMISSY                            642
+ 9 <NA>                              494
+10 Quartier de Neuville              302
+11 HARLY                             156
+12 ROUVROY                             6
+
+dup OBJECTID: 0  dup GlobalID: 0 
+dup (X,Y,espece): 74 
+
+haut_tot==0: 158   >50m: 0 
+haut_tronc>haut_tot: 1 
+tronc_diam==0: 159   >500cm: 2 
+age_estim==0: 168   >300: 1 
+plantation: 1970-01-01 00:00:02 -> 2020-12-14 13:10:22  NA= 9838 
+abattage  : 2012-06-01 -> 2020-12-14 13:07:12  NA= 10620 
