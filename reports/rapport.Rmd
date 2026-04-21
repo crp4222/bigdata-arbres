@@ -89,7 +89,7 @@ confirme la coherence des variables mesurees (voir aussi la figure 4).
 
 ## Problemes identifies pendant l'exploration
 
-L'exploration (`scripts/01_exploration.R`) a mis en evidence :
+L'exploration (script `01_exploration.R`) a mis en evidence :
 
 - des modalites categorielles saisies de facon incoherente : "Jeune" vs
   "jeune", "Libre" vs "libre", "Bande de terre" vs "bande de terre"... ;

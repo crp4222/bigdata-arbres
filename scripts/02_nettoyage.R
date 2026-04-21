@@ -61,21 +61,3 @@ print(sort(sapply(df, function(x) sum(is.na(x))), decreasing = TRUE)[1:10])
 
 dir.create("data/clean", showWarnings = FALSE, recursive = TRUE)
 write_csv(df, "data/clean/arbres_clean.csv")
-
-# petit memo pour le rapport
-writeLines(c(
-  paste("annee de reference :", an_ref),
-  paste("lignes initiales : 11421"),
-  paste("lignes finales   :", nrow(df)),
-  "",
-  "regles appliquees :",
-  "- normalisation casse/accents des variables categorielles",
-  "- 'RAS' et chaines vides -> NA",
-  "- hauteurs/diametre/age a 0 -> NA (valeurs impossibles)",
-  "- age_estim > 200 -> NA (saisie d'annee au lieu de l'age)",
-  "- tronc_diam > 400 cm -> NA",
-  "- haut_tronc > haut_tot -> NA",
-  "- dte_plantation en 1970-01-01 -> NA (valeur par defaut)",
-  "- suppression des lignes sans X/Y",
-  "- age_calc = annee_ref - annee_plantation"
-), "reports/02_nettoyage.txt")

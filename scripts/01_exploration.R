@@ -6,9 +6,7 @@ library(lubridate)
 df <- read_csv("data/raw/Data_Arbre.csv", show_col_types = FALSE,
                col_types = cols(.default = col_character()))
 
-dir.create("reports", showWarnings = FALSE)
 dir.create("figures", showWarnings = FALSE)
-sink("reports/01_exploration.txt", split = TRUE)
 
 cat("dim:", dim(df), "\n\n")
 print(names(df))
@@ -73,5 +71,3 @@ ggsave("figures/diag_haut_tot.png",
 ggsave("figures/diag_tronc_diam.png",
        ggplot(tibble(d=d), aes(d)) + geom_histogram(bins=60) + theme_minimal(),
        width=7, height=4, dpi=120)
-
-sink()

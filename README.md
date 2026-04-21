@@ -12,7 +12,7 @@ scripts/       01_exploration.R      description + diagnostic
                02_nettoyage.R        regles de nettoyage + export
                03_viz.R              graphiques PNG
 figures/                             sorties PNG
-reports/                             traces texte (exploration + memo nettoyage)
+reports/       rapport.Rmd / .pdf    rapport final
 ```
 
 ## Utilisation
@@ -27,7 +27,7 @@ Packages : `tidyverse`, `janitor`, `skimr`, `lubridate`, `stringi`.
 
 ## Choix de nettoyage
 
-Decisions prises apres l'exploration (`reports/01_exploration.txt`) :
+Decisions prises apres l'exploration (`scripts/01_exploration.R`) :
 
 - **Casse / accents** : modalites saisies de facon incoherente ("Jeune" vs
   "jeune", "Libre" vs "libre"...). Tout passe en minuscules sans accents.
