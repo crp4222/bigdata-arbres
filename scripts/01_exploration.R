@@ -1,7 +1,7 @@
 library(tidyverse)
 library(lubridate)
 
-# On va lire le fichier DEUX FOIS, pour deux usages differents :
+# On va lire le fichier deux fois, pour deux usages differents :
 #
 # 1) df : on force tout en texte (character). Comme ca R ne transforme rien,
 #    on voit exactement ce qui est ecrit dans le CSV (les "RAS", les "0",
