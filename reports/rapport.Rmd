@@ -449,6 +449,7 @@ En rajoutant des arbres dans ces zones, on pourra harmoniser le développement g
 ## Étude de la régression linéaire
 
 Pour prédire la variable âge de l’arbre, il faut d’abord se demander quelles variables peuvent permettre de la prédire. Après analyse, ces variables seraient les meilleures pour prédire l’âge d’un arbre :
+
 - Hauteur totale de l’arbre
 - Hauteur du tronc
 - Diamètre du tronc
