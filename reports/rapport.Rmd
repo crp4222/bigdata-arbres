@@ -341,14 +341,19 @@ library(corrplot)
 
 ```{r corrplot, fig.cap="Matrice de corrélation des variables numériques."}
 vars_num <- df[, sapply(df, is.numeric)]
+vars_num <- vars_num[, !names(vars_num) %in% c("X", "Y", "OBJECTID")]
 vars_num <- vars_num[, colSums(is.na(vars_num)) < nrow(vars_num)]
 mat_cor  <- cor(vars_num, use = "complete.obs")
 
 corrplot(mat_cor,
-         method = "circle", type = "upper",
-         tl.cex = 0.9, tl.col = "black",
-         addCoef.col = "black", number.cex = 0.75,
-         col = colorRampPalette(c("#d73027", "white", "#1a9850"))(200),
+         method = "color",
+         type = "full",
+         tl.cex = 0.9,
+         tl.col = "black",
+         tl.srt = 45,
+         addCoef.col = "black",
+         number.cex = 0.75,
+         col = colorRampPalette(c("#2166ac", "white", "#d73027"))(200),
          title = "Corrélations entre variables numériques",
          mar = c(0, 0, 3, 0))
 ```

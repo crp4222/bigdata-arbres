@@ -15,13 +15,14 @@ vars_num <- vars_num[, colSums(is.na(vars_num)) < nrow(vars_num)]
 mat_cor <- cor(vars_num, use = "complete.obs")
 
 corrplot(mat_cor,
-         method = "circle",
-         type = "upper",
+         method = "color",
+         type = "full",
          tl.cex = 0.9,
          tl.col = "black",
+         tl.srt = 45,
          addCoef.col = "black",
          number.cex = 0.75,
-         col = colorRampPalette(c("#d73027", "white", "#1a9850"))(200),
+         col = colorRampPalette(c("#2166ac", "white", "#d73027"))(200),
          title = "Corrélations entre variables numériques",
          mar = c(0, 0, 3, 0))
 
