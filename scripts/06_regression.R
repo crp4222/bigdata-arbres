@@ -18,6 +18,10 @@ modele_lm <- lm(age_estim~haut_tot + haut_tronc + tronc_diam, data=arbres)
 # Analyse des composants et du R²
 summary(modele_lm)
 
+# Analyse :
+# Le R² est de 63%, il y a 63% de la variabilité de l'âge qui est expliqué par la taille et la dimension du tronc
+# La hauteur du tron et sa dimension sont les variables les plus influant de l'âge
+
 # --- Partie Régression logistique ---
 # Mise en binaire des arbres abattu
 arbres$a_abattre <- ifelse(arbres$fk_arb_etat %in% c("abattu"), 1, 0)
@@ -36,8 +40,13 @@ modele_logit <- glm(a_abattre ~ haut_tot + haut_tronc + tronc_diam + age_estim +
                     data = arbres,
                     family = binomial)
 
+
 # Visualisation des composants
 summary(modele_logit)
+
+# Analyse :
+# On voit ici que les arbres jeunes sont les plus abattu, mais on sait qu'on a que 3% de nos données qui sont des arbres abattu, donc on ne peux pas se fier à cette analyse
+
 
 # Application de la prédiction sur le modèle
 proba <- predict(modele_logit, type = "response")
@@ -45,3 +54,6 @@ arbres$prediction <- ifelse(proba > 0.5, 1, 0)
 
 # Matrice de confusion
 table(Predit = arbres$prediction, Reel = arbres$a_abattre)
+
+# Analyse :
+# Dans la matrice de confusion, on peut voir que notre modèle prédit bien les arbres abattu mais comme dit plus haut, on n'a trop peu de données sur les arbres abattu donc on ne peux pas se fier à cette analyse (On verra avec la partie IA pour séparer les données
