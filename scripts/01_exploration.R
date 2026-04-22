@@ -102,21 +102,20 @@ if (file.exists("data/clean/arbres_clean.csv")) {
   }
 
   # Idee : si on groupe par exemple par espece, est-ce que la hauteur varie
-  # beaucoup A L'INTERIEUR de chaque groupe ? Si non (faible variance intra),
-  # ca veut dire que connaitre l'espece nous donne deja une bonne idee de la
-  # hauteur -> imputer par la mediane du groupe aurait du sens.
-  # On mesure ca avec un "R2" : 1 - variance_intra / variance_totale.
-  # Proche de 1 = le groupe explique bien ; proche de 0 = il n'explique rien.
+  # beaucoup a l'interieur de chaque groupe ? Si non, ca veut dire que
+  # connaitre l'espece donne deja une bonne idee de la hauteur, donc
+  # imputer par la moyenne du groupe aurait du sens.
+  # On fait le test pour chaque paire (variable a imputer, groupe) en
+  # regardant le R2 d'un simple lm(variable ~ groupe).
   cat("\nR2 par groupe :\n")
   for (y in c("haut_tot","haut_tronc","tronc_diam","age_estim")) {
     for (g in c("fk_stadedev","nomlatin","clc_quartier","feuillage")) {
       dd <- clean[, c(y, g)]
       dd <- dd[complete.cases(dd), ]
       if (nrow(dd) < 10) next
-      var_tot <- var(dd[[y]])
-      var_intra <- mean(tapply(dd[[y]], dd[[g]], var), na.rm = TRUE)
-      cat(sprintf("  %-12s ~ %-14s  R2 = %.3f\n",
-                  y, g, 1 - var_intra/var_tot))
+      modele <- lm(dd[[y]] ~ dd[[g]])
+      r2 <- summary(modele)$r.squared
+      cat("  ", y, " ~ ", g, "  R2 =", round(r2, 3), "\n")
     }
   }
 }

@@ -30,7 +30,7 @@ Rscript scripts/06_regression.R     # regressions
 L'ordre compte : `02_nettoyage.R` doit etre lance avant les scripts 04-06
 (ils partent de `arbres_clean.csv`).
 
-Packages utilises : `tidyverse`, `lubridate`, `stringi`, `leaflet`, `sf`.
+Packages utilises : `tidyverse`, `lubridate`, `leaflet`, `sf`.
 
 ## Choix de nettoyage (fonctionnalite 1 & 2)
 

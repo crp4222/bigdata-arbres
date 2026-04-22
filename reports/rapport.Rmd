@@ -49,17 +49,16 @@ de la metadonnee de saisie, peu utile pour l'analyse.
 
 ```{r stats-num}
 num <- c("haut_tot","haut_tronc","tronc_diam","age_estim")
-df %>% select(all_of(num)) %>%
-  summarise(across(everything(),
-                   list(min = ~min(.x, na.rm=TRUE),
-                        med = ~median(.x, na.rm=TRUE),
-                        moy = ~round(mean(.x, na.rm=TRUE),1),
-                        max = ~max(.x, na.rm=TRUE),
-                        NA_ = ~sum(is.na(.x))))) %>%
-  pivot_longer(everything(), names_to = c("var","stat"),
-               names_sep = "_(?=[^_]+$)", values_to = "val") %>%
-  pivot_wider(names_from = stat, values_from = val) %>%
-  kable(caption = "Resume des variables numeriques (apres nettoyage).")
+resume <- data.frame(
+  variable = num,
+  min      = sapply(df[num], min,    na.rm = TRUE),
+  mediane  = sapply(df[num], median, na.rm = TRUE),
+  moyenne  = round(sapply(df[num], mean, na.rm = TRUE), 1),
+  max      = sapply(df[num], max,    na.rm = TRUE),
+  NA_      = sapply(df[num], function(x) sum(is.na(x)))
+)
+kable(resume, row.names = FALSE,
+      caption = "Resume des variables numeriques (apres nettoyage).")
 ```
 
 En regardant les medianes, les arbres de la base font en moyenne environ

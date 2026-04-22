@@ -1,6 +1,5 @@
 library(tidyverse)
 library(lubridate)
-library(stringi)
 
 # On repart du CSV brut pour que le nettoyage soit reproductible
 # (si on relance le script, on obtient exactement le meme fichier propre).
@@ -11,9 +10,10 @@ df <- read_csv("data/raw/Data_Arbre.csv", show_col_types = FALSE)
 # - on remplace les "" et "RAS" par NA (vus pendant l'exploration)
 # - on passe en minuscules sans accent pour fusionner "Jeune"/"jeune"/"JEUNE"
 norm <- function(x) {
-  x <- str_squish(x)
+  x <- trimws(x)
   x <- ifelse(x %in% c("", "RAS", "ras"), NA, x)
-  stri_trans_general(tolower(x), "Latin-ASCII")
+  x <- tolower(x)
+  iconv(x, from = "UTF-8", to = "ASCII//TRANSLIT")
 }
 
 # Colonnes categorielles a nettoyer (identifiees dans 01_exploration.R,
@@ -30,7 +30,7 @@ df <- df %>% mutate(across(all_of(cat_vars), norm))
 # moche et c'est incorrect. On se contente d'enlever les espaces en trop
 # et de transformer les "RAS" en NA.
 clean_nom <- function(x) {
-  x <- str_squish(x)
+  x <- trimws(x)
   ifelse(x %in% c("", "RAS", "ras"), NA, x)
 }
 df$nomfrancais <- clean_nom(df$nomfrancais)
