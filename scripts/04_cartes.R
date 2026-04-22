@@ -50,7 +50,7 @@ carte_remarquables <- leaflet(df_remarquables) %>%
   )
 carte_remarquables
 
-# --- Carte 3 : Densité d'arbres par quartier ---
+# --- Carte 3 : Densité d'arbres par quartier et par secteur ---
 arbres_par_quartier <- as.data.frame(table(df_carte$clc_quartier))
 colnames(arbres_par_quartier) <- c("quartier", "nb_arbres")
 
@@ -71,3 +71,24 @@ carte_quartiers <- leaflet(quartier_data) %>%
     popup = ~paste("Quartier:", quartier, "<br>Nombre d'arbres:", nb_arbres)
   )
 carte_quartiers
+
+arbres_par_secteur <- as.data.frame(table(df_carte$clc_secteur))
+colnames(arbres_par_secteur) <- c("secteur", "nb_arbres")
+
+coords_secteur <- aggregate(cbind(lon_wgs84, lat_wgs84) ~ clc_secteur,
+                             data = df_carte, FUN = mean)
+colnames(coords_secteur)[1] <- "secteur"
+
+secteur_data <- merge(arbres_par_secteur, coords_secteur, by = "secteur")
+
+carte_secteur <- leaflet(secteur_data) %>%
+  addTiles() %>%
+  addCircleMarkers(
+    lng = ~lon_wgs84,
+    lat = ~lat_wgs84,
+    radius = ~sqrt(nb_arbres) * 1.5,
+    color = "purple",
+    fillOpacity = 0.5,
+    popup = ~paste("Secteur:", secteur, "<br>Nombre d'arbres:", nb_arbres)
+  )
+carte_secteur

@@ -7,9 +7,9 @@ arbres <- read.csv("data/clean/arbres_clean.csv",
                    sep = ",", header = TRUE,
                    stringsAsFactors = TRUE, encoding = "UTF-8")
 
-# --- Analyse des zones ---
-# Spacial : Zones avec le moins d'arbres = HARLY, NEUVEILLE, Quartier (sans nom), ROUVROY
-# Temporel : Zones avec des arbres vieux, sans trop de jeune = Quartier de l'Europe
+# --- Analyse des zones (quartiers) ---
+# Spacial : Zones avec le moins d'arbres = HARLY, NEUVILLE, ROUVROY
+# Temporel : Zones avec des arbres vieux, sans trop de jeune = Quartier de l'Europe, Remicourt, Centre-Ville
 
 # --- Partie Régression linéaire ---
 # Chargement du modèle
@@ -29,11 +29,10 @@ arbres <- arbres[!is.na(arbres$tronc_diam), ]
 arbres <- arbres[!is.na(arbres$age_estim), ]
 arbres <- arbres[!is.na(arbres$fk_stadedev), ]
 arbres <- arbres[!is.na(arbres$haut_tronc), ]
-arbres <- arbres[!is.na(arbres$feuillage), ]
 
 # Chargement du modèle logistique
 modele_logit <- glm(a_abattre ~ haut_tot + haut_tronc + tronc_diam + age_estim +
-                      fk_stadedev + feuillage,
+                      fk_stadedev,
                     data = arbres,
                     family = binomial)
 
