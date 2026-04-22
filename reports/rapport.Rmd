@@ -56,16 +56,17 @@ df %>% select(all_of(num)) %>%
   kable(caption = "Resume des variables numeriques (apres nettoyage).")
 ```
 
-La hauteur mediane est d'environ 8 m, le diametre median d'environ 89 cm, ce
-qui correspond a des arbres urbains d'age moyen (mediane de l'age estime a
-30 ans).
+En regardant les medianes, les arbres de la base font en moyenne environ
+8 m de haut et 89 cm de diametre de tronc, pour un age estime autour de
+30 ans. Ca correspond bien a ce qu'on imagine pour des arbres de ville :
+pas tout jeunes, mais pas centenaires non plus.
 
 ### Variables categorielles
 
-La grande majorite des arbres est **en place** (`r scales::percent(mean(df$fk_arb_etat=="en place", na.rm=TRUE))`),
-et `r sum(df$remarquable=="oui", na.rm=TRUE)` arbres sont classes comme
-remarquables. Les feuillus dominent largement (environ 86%). Les quartiers les
-plus peuples sont Saint-Martin - Oestres, Remicourt et le Faubourg d'Isle.
+La grande majorite des arbres est encore **en place**, et seuls quelques
+arbres sont classes comme remarquables. On a surtout des feuillus (environ
+86%), et les quartiers qui en concentrent le plus sont Saint-Martin - Oestres,
+Remicourt et le Faubourg d'Isle.
 
 ## Bivariees
 
@@ -81,8 +82,9 @@ df %>% filter(!is.na(fk_stadedev)) %>%
         caption = "Moyennes des metriques par stade de developpement.")
 ```
 
-Les moyennes augmentent logiquement du stade **jeune** vers **vieux**, ce qui
-confirme la coherence des variables mesurees (voir aussi la figure 4).
+On voit que les moyennes grimpent bien quand on passe du stade jeune au
+stade vieux, ce qui est plutot rassurant : les variables mesurees sont
+coherentes entre elles.
 
 # Nettoyage des donnees
 
@@ -104,49 +106,61 @@ L'exploration (script `01_exploration.R`) a mis en evidence :
 
 ## Regles appliquees
 
-Les decisions ont ete prises en fonction des constats ci-dessus :
+A partir de ces constats, voici ce qu'on a decide :
 
-| Regle | Justification |
-|-------|---------------|
-| Modalites en minuscules sans accents | Uniformiser les doublons de casse |
-| `"RAS"`, `""` $\rightarrow$ `NA` | Traiter les NA caches comme des vrais NA |
-| `haut_tot`, `haut_tronc`, `tronc_diam`, `age_estim` a 0 $\rightarrow$ `NA` | Valeurs physiquement impossibles |
-| `age_estim > 200` $\rightarrow$ `NA` | Annee saisie a la place de l'age |
-| `tronc_diam > 400 cm` $\rightarrow$ `NA` | Invraisemblable (diametre > 4 m) |
-| `haut_tronc > haut_tot` $\rightarrow$ `NA` | Incoherence physique |
-| `dte_plantation == 1970-01-01` $\rightarrow$ `NA` | Valeur par defaut de la base |
-| Lignes sans `X`/`Y` supprimees | Inutilisables pour la carte |
-| Doublons (X, Y, nomlatin) gardes | Replantations legitimes |
+- **Uniformiser les modalites texte** : tout passer en minuscules sans accents,
+  pour que "Jeune" et "jeune" soient comptes comme la meme chose.
+- **Remplacer "RAS" et les cases vides par NA**, parce que c'est ce qu'elles
+  sont vraiment.
+- **Transformer les 0 sur hauteur / diametre / age en NA** : un arbre ne peut
+  pas mesurer 0 m.
+- **Traiter les valeurs trop grandes comme des erreurs de saisie** :
+  age > 200 ans (sans doute une annee tapee par erreur), diametre > 4 m
+  (pas credible), ou hauteur de tronc superieure a la hauteur totale
+  (impossible).
+- **Traiter les dates 1970-01-01 comme des NA**, c'est juste la valeur
+  par defaut de la base quand la date n'a pas ete renseignee.
+- **Supprimer les lignes sans coordonnees** : elles ne servent pas pour la
+  carte.
+- **Garder les "doublons" (X, Y, espece)** : ce sont probablement des arbres
+  replantes au meme endroit, donc des informations legitimes.
 
-Apres nettoyage : **`r nrow(df)` lignes** (2 supprimees par rapport au brut).
-L'annee de reference pour `age_calc` est **`r max(c(year(df$dte_plantation), year(df$dte_abattage)), na.rm=TRUE)`** (annee maximale observee dans les donnees).
+Au final, apres nettoyage il nous reste **`r nrow(df)` lignes**, soit
+seulement 2 lignes en moins par rapport au fichier brut. L'annee de
+reference qu'on utilise pour calculer l'age (`age_calc`) est
+**`r max(c(year(df$dte_plantation), year(df$dte_abattage)), na.rm=TRUE)`**,
+c'est la date la plus recente qu'on voit dans les donnees.
 
-## Gestion des valeurs manquantes restantes
+## Et les NA qui restent ?
 
-Il reste des NA apres nettoyage. On a mesure dans quelle mesure une imputation
-par groupe aurait du sens, en calculant pour chaque variable numerique la part
-de variance expliquee par un groupe ($R^2$) :
+Apres nettoyage, il reste encore des NA. On s'est demande si ca valait la
+peine de les remplacer par la mediane d'un groupe (par exemple, remplacer
+une hauteur manquante par la hauteur mediane des arbres de la meme espece).
 
-| Variable | Meilleur groupe | $R^2$ | NA restants |
-|---|---|---|---|
-| `haut_tot` | nomlatin | 0.50 | 170 (1.5%) |
-| `tronc_diam` | fk_stadedev | 0.44 | 191 (1.7%) |
-| `age_estim` | fk_stadedev | 0.51 | 1020 (8.9%) |
-| `haut_tronc` | nomlatin | 0.22 | 1098 (9.6%) |
+Pour voir si un groupe est "pertinent" pour imputer, on a regarde combien
+de la variation d'une variable est expliquee par le groupe (c'est l'idee
+du R2 : plus il est proche de 1, plus le groupe contient l'info). Les
+meilleurs resultats qu'on obtient :
 
-**On a choisi de ne pas imputer :**
+- hauteur totale par espece : R2 = 0.50
+- diametre du tronc par stade : R2 = 0.44
+- age estime par stade : R2 = 0.51
+- hauteur de tronc par espece : R2 = 0.22
 
-- `age_estim` est la cible de la regression (Fonctionnalite 5). Imputer la
-  cible biaise l'evaluation du modele.
-- `haut_tot` et `tronc_diam` ont peu de NA (~1.5%) : l'impact d'une imputation
-  est negligeable.
-- `haut_tronc` a un $R^2$ trop faible (0.22) : la mediane par groupe serait
-  arbitraire.
-- `dte_plantation` a 86% de NA : la ville ne connait tout simplement pas la
-  date pour une majorite des arbres. Rien ne permet de la reconstituer.
+Au final on a prefere **ne pas imputer**, pour plusieurs raisons :
 
-Les fonctions R gerent les NA nativement (`na.rm = TRUE`, retrait automatique
-dans `ggplot`). Le fichier exporte est `data/clean/arbres_clean.csv`.
+- l'age estime, c'est ce qu'on veut predire plus loin (fonctionnalite 5),
+  donc si on le remplit nous-memes on va fausser l'evaluation du modele ;
+- pour la hauteur totale et le diametre, il y a tres peu de NA (~1.5%),
+  donc ca ne changerait pas grand chose ;
+- pour la hauteur de tronc, le R2 est trop faible (0.22), le groupe n'est
+  pas assez informatif : la mediane serait presque tiree au hasard ;
+- pour la date de plantation, 86% sont manquantes - la ville ne la connait
+  tout simplement pas, on ne peut rien inventer.
+
+De toute facon, R gere tres bien les NA tout seul (`na.rm = TRUE` dans les
+fonctions, `ggplot` les ignore automatiquement). Le fichier final est
+exporte dans `data/clean/arbres_clean.csv`.
 
 # Visualisations
 
@@ -156,9 +170,9 @@ dans `ggplot`). Le fichier exporte est `data/clean/arbres_clean.csv`.
 include_graphics(fig("01_stade_dev.png"))
 ```
 
-La population est dominee par les adultes (~53%) et les jeunes (~40%). Les
-arbres vieux ou senescents restent marginaux, ce qui est coherent avec une
-gestion active du patrimoine (abattages, replantations).
+Les arbres adultes (~53%) et jeunes (~40%) dominent largement. Les arbres
+vieux ou en fin de vie sont minoritaires, ce qui semble logique : la ville
+abat et replante regulierement.
 
 ## Repartition geographique
 
@@ -170,10 +184,10 @@ include_graphics(fig("02_quartier.png"))
 include_graphics(fig("03_secteurs_top20.png"))
 ```
 
-Les quartiers Saint-Martin - Oestres, Remicourt et le Faubourg d'Isle
-concentrent la majorite des arbres. La distribution par secteur est tres
-longue : une poignee d'axes majeurs rassemblent beaucoup d'arbres, puis une
-longue traine de petits secteurs.
+Trois quartiers concentrent la majorite des arbres : Saint-Martin - Oestres,
+Remicourt et le Faubourg d'Isle. Cote secteurs (rues / avenues), on voit
+que quelques grands axes portent beaucoup d'arbres, et il y a ensuite
+plein de petits secteurs avec tres peu d'arbres chacun.
 
 ## Distributions des metriques
 
@@ -182,9 +196,10 @@ include_graphics(fig("05_haut_tot.png"))
 include_graphics(fig("06_tronc_diam.png"))
 ```
 
-Les deux distributions sont asymetriques a droite : beaucoup d'arbres petits
-ou moyens, quelques arbres tres gros. La hauteur totale se concentre entre 3
-et 15 m, le diametre entre 30 et 150 cm.
+Les deux histogrammes sont decales vers la gauche : on a beaucoup d'arbres
+petits ou moyens, et quelques gros qui tirent la queue de la distribution
+vers la droite. Concretement, la plupart des arbres mesurent entre 3 et
+15 m de haut, avec un diametre de tronc entre 30 et 150 cm.
 
 ## Croisements
 
@@ -192,9 +207,11 @@ et 15 m, le diametre entre 30 et 150 cm.
 include_graphics(fig("08_boxplot_haut_stade.png"))
 ```
 
-Les boites montrent une progression nette : jeune < adulte < vieux/senescent.
-La variance intra-groupe reste importante, ce qui explique que le $R^2$
-par stade tourne autour de 0.3-0.5.
+On voit clairement que la hauteur monte quand on passe de jeune a adulte
+puis a vieux / senescent. Ceci dit les boites sont assez larges (il y a
+beaucoup de variabilite a l'interieur de chaque stade), ce qui explique
+qu'on n'arrive pas a depasser un R2 de 0.3-0.5 quand on essaie de predire
+la hauteur a partir du stade.
 
 ## Especes
 
@@ -202,9 +219,9 @@ par stade tourne autour de 0.3-0.5.
 include_graphics(fig("10_especes_top15.png"))
 ```
 
-Le patrimoine est assez diversifie. On observe cependant la predominance de
-quelques especes classiques du paysage urbain francais (platanes, tilleuls,
-erables...).
+Il y a une bonne diversite d'especes, mais on retrouve quand meme les
+grands classiques du paysage urbain francais en tete : platanes, tilleuls,
+erables...
 
 ## Dynamique temporelle
 
@@ -212,18 +229,17 @@ erables...).
 include_graphics(fig("13_plantations_annee.png"))
 ```
 
-La grande majorite des dates de plantation n'etant pas renseignee (86% de NA),
-ce graphique porte sur une minorite des arbres. Il reste utile pour visualiser
-l'effort de plantation des dernieres annees.
+Attention : ce graphique ne porte que sur une petite partie des arbres,
+vu que 86% des dates de plantation ne sont pas renseignees. Il donne
+quand meme une idee de l'effort de plantation des dernieres annees.
 
 # Conclusion
 
-L'exploration a permis d'identifier des defauts typiques d'une base de saisie
-manuelle : incoherences de casse, NA codes en "RAS", zeros a la place de NA,
-quelques aberrations numeriques et une date par defaut epoch. Le nettoyage
-reste leger (seules 2 lignes supprimees) mais les regles appliquees rendent
-le jeu de donnees exploitable pour la suite du projet (carte, etude des
-correlations, regressions).
+L'exploration a surtout montre qu'on avait affaire a une base saisie a la
+main : modalites ecrites differemment d'une ligne a l'autre, "RAS" au lieu
+de NA, des 0 qui devraient etre des NA, quelques valeurs aberrantes et des
+dates par defaut a 1970. Au final le nettoyage n'a supprime que 2 lignes,
+mais les regles appliquees rendent le fichier exploitable pour la suite.
 
-Le fichier `data/clean/arbres_clean.csv` sert de base aux Fonctionnalites 3
-a 6.
+Le fichier `data/clean/arbres_clean.csv` est celui qui sert de base pour
+les fonctionnalites 3 a 6 (carte, correlations, regressions).
