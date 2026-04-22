@@ -8,8 +8,12 @@ output:
     toc: true
     toc_float: true
     number_sections: true
+  pdf_document:
+    toc: false
+    number_sections: true
 fontsize: 11pt
 geometry: margin=2.2cm
+always_allow_html: true
 ---
 
 ```{r setup, include=FALSE}
@@ -111,7 +115,14 @@ L'exploration (script `01_exploration.R`) a mis en evidence :
 A partir de ces constats, voici ce qu'on a decide :
 
 - **Uniformiser les modalites texte** : tout passer en minuscules sans accents,
-  pour que "Jeune" et "jeune" soient comptes comme la meme chose.
+  pour que "Jeune" et "jeune" soient comptes comme la meme chose. On fait
+  quand meme une exception pour les noms d'especes (`nomfrancais` et
+  `nomlatin`) : on garde la casse et les accents d'origine. Sinon on se
+  retrouverait avec "erable" au lieu de "Erable" sur les graphiques, et
+  surtout "acer platanoides" au lieu de "Acer platanoides" alors que la
+  convention en biologie est de mettre une majuscule au genre. Pour ces
+  deux colonnes on se contente d'enlever les espaces en trop et de
+  remplacer les "RAS" par NA.
 - **Remplacer "RAS" et les cases vides par NA**, parce que c'est ce qu'elles
   sont vraiment.
 - **Transformer les 0 sur hauteur / diametre / age en NA** : un arbre ne peut
@@ -221,9 +232,17 @@ la hauteur a partir du stade.
 include_graphics(fig("10_especes_top15.png"))
 ```
 
-Il y a une bonne diversite d'especes, mais on retrouve quand meme les
-grands classiques du paysage urbain francais en tete : platanes, tilleuls,
-erables...
+Petite surprise en regardant les donnees de plus pres : la colonne
+`nomfrancais` du fichier brut ne contient pas de vrais noms francais, mais
+des codes courts (par exemple `PLAACE` pour le platane commun, `TILCOR`
+pour le tilleul a petites feuilles). La colonne `nomlatin` est un doublon
+de ces memes codes. Pour que le graphique soit lisible, on a traduit a la
+main les 15 codes les plus frequents vers leur vrai nom francais (table
+dans `02_nettoyage.R`).
+
+Au final il y a une bonne diversite d'especes, mais on retrouve quand
+meme les grands classiques du paysage urbain francais en tete : platanes,
+tilleuls, pins noirs, bouleaux, et beaucoup d'erables.
 
 ## Dynamique temporelle
 

@@ -20,9 +20,21 @@ norm <- function(x) {
 # ce sont toutes celles ou on a vu des incoherences de casse).
 cat_vars <- c("fk_arb_etat","fk_stadedev","fk_port","fk_pied",
               "fk_situation","fk_revetement","feuillage","remarquable",
-              "clc_quartier","clc_secteur","villeca","nomfrancais","nomlatin")
+              "clc_quartier","clc_secteur","villeca")
 
 df <- df %>% mutate(across(all_of(cat_vars), norm))
+
+# Pour les noms d'especes on ne passe PAS tout en minuscules sans accents :
+# un rapport avec "erable" au lieu de "Erable" ou "acer platanoides" au lieu
+# de "Acer platanoides" (convention latine : majuscule au genre) ca fait
+# moche et c'est incorrect. On se contente d'enlever les espaces en trop
+# et de transformer les "RAS" en NA.
+clean_nom <- function(x) {
+  x <- str_squish(x)
+  ifelse(x %in% c("", "RAS", "ras"), NA, x)
+}
+df$nomfrancais <- clean_nom(df$nomfrancais)
+df$nomlatin   <- clean_nom(df$nomlatin)
 
 # Meme traitement pour les champs texte qui contiennent aussi des "RAS".
 df$commentaire_environnement <- ifelse(df$commentaire_environnement %in% c("RAS","ras","") |
@@ -155,12 +167,41 @@ p <- df %>% filter(!is.na(fk_arb_etat)) %>%
   labs(title = "Etat des arbres", x = NULL, y = "Nombre d'arbres")
 ggsave("figures/09_etat.png", p, width = 7, height = 4, dpi = 200)
 
-# 10. Top 15 des especes les plus presentes
+# 10. Top 15 des especes les plus presentes.
+# La colonne "nomfrancais" du fichier brut contient en fait des codes courts
+# (ex. "PLAACE" pour Platanus x acerifolia), pas les vrais noms francais.
+# On traduit a la main les 15 codes les plus frequents pour que le graphique
+# soit lisible. Les codes sont transformes en facteur pour garantir qu'un nom
+# manquant du dictionnaire apparaitrait en NA (plutot que de faire planter
+# le script en silence).
+dico_especes <- c(
+  "PLAACE"    = "Platane commun",
+  "TILCOR"    = "Tilleul a petites feuilles",
+  "PINNIGnig" = "Pin noir",
+  "BETPEN"    = "Bouleau verruqueux",
+  "ACEPSE"    = "Erable sycomore",
+  "ACEPLA"    = "Erable plane",
+  "LIRTUL"    = "Tulipier de Virginie",
+  "FAGSYLfas" = "Hetre fastigie",
+  "POPNIGita" = "Peuplier d'Italie",
+  "LIQSTY"    = "Copalme d'Amerique",
+  "PRUCERpis" = "Prunier pissard",
+  "PRUSER"    = "Cerisier du Japon",
+  "ACECAM"    = "Erable champetre",
+  "FRAEXC"    = "Frene commun",
+  "CARBET"    = "Charme commun"
+)
+
 top_esp <- df %>% filter(!is.na(nomfrancais)) %>%
-  count(nomfrancais, sort = TRUE) %>% head(15)
-p <- ggplot(top_esp, aes(reorder(nomfrancais, n), n)) +
+  count(nomfrancais, sort = TRUE) %>% head(15) %>%
+  mutate(label = ifelse(nomfrancais %in% names(dico_especes),
+                        dico_especes[nomfrancais],
+                        nomfrancais))
+
+p <- ggplot(top_esp, aes(reorder(label, n), n)) +
   geom_col(fill = "darkorange") + coord_flip() +
-  labs(title = "Top 15 des especes (nom francais)", x = NULL, y = "Nombre d'arbres")
+  labs(title = "Top 15 des especes les plus frequentes",
+       x = NULL, y = "Nombre d'arbres")
 ggsave("figures/10_especes_top15.png", p, width = 8, height = 6, dpi = 200)
 
 # 11. Feuillus vs coniferes
