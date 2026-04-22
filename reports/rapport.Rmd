@@ -1,10 +1,12 @@
 ---
 title: "Projet Big Data - Patrimoine arbore de Saint-Quentin"
 subtitle: "Fonctionnalites 1 & 2 : exploration, nettoyage, visualisation"
+author: "Elie"
 date: "`r format(Sys.Date(), '%d/%m/%Y')`"
 output:
-  pdf_document:
-    toc: false
+  html_document:
+    toc: true
+    toc_float: true
     number_sections: true
 fontsize: 11pt
 geometry: margin=2.2cm
@@ -215,6 +217,205 @@ include_graphics(fig("13_plantations_annee.png"))
 La grande majorite des dates de plantation n'etant pas renseignee (86% de NA),
 ce graphique porte sur une minorite des arbres. Il reste utile pour visualiser
 l'effort de plantation des dernieres annees.
+# Visualisation cartographique
+
+```{r setup-carto, include=FALSE}
+library(leaflet)
+library(sf)
+```
+
+Les données de coordonnées (système EPSG:3949) ont été converties en WGS84
+pour permettre l'affichage sur des fonds de carte interactifs via le package
+`leaflet`.
+
+## Tous les arbres
+
+```{r carte-setup, include=FALSE}
+df_clean <- df[!is.na(df$X) & !is.na(df$Y), ]
+df_sf    <- st_as_sf(df_clean, coords = c("X", "Y"), crs = 3949)
+df_wgs84 <- st_transform(df_sf, crs = 4326)
+df_clean$lon_wgs84 <- st_coordinates(df_wgs84)[, 1]
+df_clean$lat_wgs84 <- st_coordinates(df_wgs84)[, 2]
+df_carte <- df_clean[!is.na(df_clean$lat_wgs84) & !is.na(df_clean$lon_wgs84), ]
+```
+
+La carte 1 positionne l'ensemble des **`r nrow(df_carte)` arbres** géolocalisés
+sur le territoire de Saint-Quentin. Chaque marqueur vert indique la position
+d'un arbre ; le popup affiche le quartier et l'espèce.
+
+```{r carte-tous, fig.cap="Carte interactive de l'ensemble des arbres (vert)."}
+carte_tous <- leaflet(df_carte) %>%
+  addTiles() %>%
+  addCircleMarkers(
+    lng = ~lon_wgs84, lat = ~lat_wgs84,
+    radius = 3, color = "green",
+    popup = ~paste("Quartier:", clc_quartier, "<br>Espèce:", nomfrancais)
+  )
+carte_tous
+```
+
+## Arbres remarquables
+
+Parmi les `r nrow(df_carte)` arbres, **`r sum(tolower(df_carte$remarquable) == "oui", na.rm=TRUE)` sont classés remarquables**. Ils sont représentés en rouge sur la carte 2.
+
+```{r carte-remarquables, fig.cap="Carte des arbres remarquables (rouge)."}
+df_remarquables <- df_carte[tolower(df_carte$remarquable) == "oui", ]
+carte_remarquables <- leaflet(df_remarquables) %>%
+  addTiles() %>%
+  addCircleMarkers(
+    lng = ~lon_wgs84, lat = ~lat_wgs84,
+    radius = 5, color = "red",
+    popup = ~paste("Quartier:", clc_quartier, "<br>Espèce:", nomfrancais)
+  )
+carte_remarquables
+```
+
+## Densité par quartier et par secteur
+
+Les cartes 3 et 4 agrègent les arbres par quartier et par secteur. La taille
+de chaque bulle est proportionnelle à la racine carrée du nombre d'arbres,
+ce qui permet de comparer visuellement les concentrations sans que les grandes
+valeurs n'écrasent les petites.
+
+```{r carte-quartiers, fig.cap="Densité d'arbres par quartier (bleu)."}
+arbres_par_quartier <- as.data.frame(table(df_carte$clc_quartier))
+colnames(arbres_par_quartier) <- c("quartier", "nb_arbres")
+coords_quartier <- aggregate(cbind(lon_wgs84, lat_wgs84) ~ clc_quartier,
+                             data = df_carte, FUN = mean)
+colnames(coords_quartier)[1] <- "quartier"
+quartier_data <- merge(arbres_par_quartier, coords_quartier, by = "quartier")
+
+leaflet(quartier_data) %>%
+  addTiles() %>%
+  addCircleMarkers(
+    lng = ~lon_wgs84, lat = ~lat_wgs84,
+    radius = ~sqrt(nb_arbres) * 1.5,
+    color = "blue", fillOpacity = 0.5,
+    popup = ~paste("Quartier:", quartier, "<br>Nombre d'arbres:", nb_arbres)
+  )
+```
+
+```{r carte-secteurs, fig.cap="Densité d'arbres par secteur (violet)."}
+arbres_par_secteur <- as.data.frame(table(df_carte$clc_secteur))
+colnames(arbres_par_secteur) <- c("secteur", "nb_arbres")
+coords_secteur <- aggregate(cbind(lon_wgs84, lat_wgs84) ~ clc_secteur,
+                             data = df_carte, FUN = mean)
+colnames(coords_secteur)[1] <- "secteur"
+secteur_data <- merge(arbres_par_secteur, coords_secteur, by = "secteur")
+
+leaflet(secteur_data) %>%
+  addTiles() %>%
+  addCircleMarkers(
+    lng = ~lon_wgs84, lat = ~lat_wgs84,
+    radius = ~sqrt(nb_arbres) * 1.5,
+    color = "purple", fillOpacity = 0.5,
+    popup = ~paste("Secteur:", secteur, "<br>Nombre d'arbres:", nb_arbres)
+  )
+```
+
+# Analyse des corrélations
+
+```{r setup-corr, include=FALSE}
+library(corrplot)
+```
+
+## Corrélations entre variables numériques
+
+```{r corrplot, fig.cap="Matrice de corrélation des variables numériques."}
+vars_num <- df[, sapply(df, is.numeric)]
+vars_num <- vars_num[, colSums(is.na(vars_num)) < nrow(vars_num)]
+mat_cor  <- cor(vars_num, use = "complete.obs")
+
+corrplot(mat_cor,
+         method = "circle", type = "upper",
+         tl.cex = 0.9, tl.col = "black",
+         addCoef.col = "black", number.cex = 0.75,
+         col = colorRampPalette(c("#d73027", "white", "#1a9850"))(200),
+         title = "Corrélations entre variables numériques",
+         mar = c(0, 0, 3, 0))
+```
+
+Les corrélations les plus fortes s'observent entre `haut_tot`, `tronc_diam`
+et `age_estim`, ce qui est cohérent : un arbre plus âgé est en général plus
+grand et plus gros.
+
+## Arbres remarquables par quartier et état sanitaire
+
+```{r barplot-quartier, fig.cap="Nombre d'arbres remarquables par quartier."}
+tableau_quartier_remarq <- table(df$clc_quartier, tolower(df$remarquable))
+df_remarq <- as.data.frame(tableau_quartier_remarq)
+colnames(df_remarq) <- c("quartier", "remarquable", "nb")
+
+ggplot(df_remarq, aes(x = reorder(quartier, -nb), y = nb, fill = remarquable)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  scale_fill_manual(values = c("non" = "#74c476", "oui" = "#e6550d")) +
+  labs(title = "Arbres remarquables par quartier",
+       x = "Quartier", y = "Nombre d'arbres", fill = "Remarquable") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 9))
+```
+
+Le quartier Remicourt concentre à lui seul la grande majorité des
+**`r sum(tolower(df$remarquable) == "oui", na.rm=TRUE)` arbres remarquables**
+recensés sur la ville.
+
+```{r barplot-etat, fig.cap="Proportion d'arbres remarquables par état sanitaire."}
+tableau_etat_remarq <- table(df$fk_arb_etat, tolower(df$remarquable))
+df_etat <- as.data.frame(tableau_etat_remarq)
+colnames(df_etat) <- c("etat", "remarquable", "nb")
+
+ggplot(df_etat, aes(x = reorder(etat, -nb), y = nb, fill = remarquable)) +
+  geom_bar(stat = "identity", position = "fill") +
+  scale_fill_manual(values = c("non" = "#74c476", "oui" = "#e6550d")) +
+  scale_y_continuous(labels = scales::percent) +
+  labs(title = "Proportion d'arbres remarquables par état sanitaire",
+       x = "État sanitaire", y = "Proportion", fill = "Remarquable") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 9))
+```
+
+## Hauteur et diamètre selon l'état sanitaire
+
+```{r boxplot-haut, fig.cap="Hauteur totale selon l'état sanitaire."}
+ggplot(df[!is.na(df$haut_tot) & df$haut_tot > 0, ],
+       aes(x = fk_arb_etat, y = haut_tot, fill = fk_arb_etat)) +
+  geom_boxplot(outlier.alpha = 0.3) +
+  labs(title = "Hauteur des arbres selon l'état sanitaire",
+       x = "État sanitaire", y = "Hauteur totale (m)") +
+  theme_minimal() +
+  theme(legend.position = "none",
+        axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+```{r boxplot-diam, fig.cap="Diamètre du tronc selon l'état sanitaire."}
+ggplot(df[!is.na(df$tronc_diam) & df$tronc_diam > 0, ],
+       aes(x = fk_arb_etat, y = tronc_diam, fill = fk_arb_etat)) +
+  geom_boxplot(outlier.alpha = 0.3) +
+  labs(title = "Diamètre du tronc selon l'état sanitaire",
+       x = "État sanitaire", y = "Diamètre du tronc (cm)") +
+  theme_minimal() +
+  theme(legend.position = "none",
+        axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+## Tests d'indépendance (Chi²)
+
+```{r chi2, echo=FALSE}
+chi2_etat     <- chisq.test(tableau_etat_remarq)
+chi2_quartier <- chisq.test(tableau_quartier_remarq)
+```
+
+Deux tests du Chi² ont été réalisés pour évaluer si les liens observés sont
+statistiquement significatifs :
+
+- **État sanitaire vs remarquable** : $\chi^2$ = `r round(chi2_etat$statistic, 1)`,
+  p-value = `r format(chi2_etat$p.value, scientific=TRUE, digits=2)` → lien **très significatif**.
+- **Quartier vs remarquable** : $\chi^2$ = `r round(chi2_quartier$statistic, 1)`,
+  p-value = `r format(chi2_quartier$p.value, scientific=TRUE, digits=2)` → lien **très significatif**.
+
+Dans les deux cas, la p-value est très inférieure à 0,05 : l'état sanitaire
+et la localisation géographique sont bien liés au caractère remarquable d'un
+arbre.
 
 # Conclusion
 

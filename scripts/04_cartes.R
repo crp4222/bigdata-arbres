@@ -1,30 +1,30 @@
 
 # ============================================================
 # FONCTIONNALITE 3 - Visualisation des données sur une carte
-# ============================================================
 
 library(leaflet)
 library(sf)
 
-# --- Chargement des données ---
+# Chargement des données
 df <- read.csv("data/raw/Data_Arbre.csv",
                sep = ",", header = TRUE,
                stringsAsFactors = FALSE, encoding = "UTF-8")
 
-# --- Suppression des lignes sans coordonnées ---
+# Suppression des lignes sans coordonnées
 df_clean <- df[!is.na(df$X) & !is.na(df$Y), ]
 
-# --- Conversion EPSG:3949 -> WGS84 ---
+# Conversion EPSG:3949 -> WGS84
 df_sf <- st_as_sf(df_clean, coords = c("X", "Y"), crs = 3949)
 df_wgs84 <- st_transform(df_sf, crs = 4326)
 df_clean$lon_wgs84 <- st_coordinates(df_wgs84)[, 1]
 df_clean$lat_wgs84 <- st_coordinates(df_wgs84)[, 2]
 
-# --- Vérification ---
+# Vérification de la cooérence des données latitude longitude
+
 head(df_clean$lat_wgs84)  # ~49.8
 head(df_clean$lon_wgs84)  # ~3.3
 
-# --- Carte 1 : Tous les arbres ---
+# Carte 1 : Tous les arbres même les plus moches
 df_carte <- df_clean[!is.na(df_clean$lat_wgs84) & !is.na(df_clean$lon_wgs84), ]
 carte_tous <- leaflet(df_carte) %>%
   addTiles() %>%
@@ -37,7 +37,7 @@ carte_tous <- leaflet(df_carte) %>%
   )
 carte_tous
 
-# --- Carte 2 : Arbres remarquables ---
+# Carte 2 : Arbres remarquables
 df_remarquables <- df_carte[df_carte$remarquable == "Oui", ]
 carte_remarquables <- leaflet(df_remarquables) %>%
   addTiles() %>%
@@ -50,7 +50,7 @@ carte_remarquables <- leaflet(df_remarquables) %>%
   )
 carte_remarquables
 
-# --- Carte 3 : Densité d'arbres par quartier et par secteur ---
+# Carte 3 - 4 : Densité d'arbres par quartier et par secteur
 arbres_par_quartier <- as.data.frame(table(df_carte$clc_quartier))
 colnames(arbres_par_quartier) <- c("quartier", "nb_arbres")
 
