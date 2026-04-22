@@ -1,31 +1,38 @@
 # Projet Big Data - Patrimoine arbore de Saint-Quentin
 
-Partie Big Data
-(exploration / nettoyage / graphiques).
+Projet sur les arbres de la ville de Saint-Quentin (Aisne) :
+exploration, nettoyage, visualisation, carte, correlations, regressions.
 
 ## Organisation
 
 ```
 data/raw/      Data_Arbre.csv        donnees brutes
-data/clean/    arbres_clean.csv      donnees nettoyees (pour la suite : IA)
-scripts/       01_exploration.R      description + diagnostic
-               02_nettoyage.R        regles de nettoyage + export
-               03_viz.R              graphiques PNG
-figures/                             sorties PNG
+data/clean/    arbres_clean.csv      donnees nettoyees
+scripts/       01_exploration.R      description + diagnostic des donnees
+               02_nettoyage.R        regles de nettoyage + export + figures
+               04_cartes.R           cartes Leaflet
+               05_correlations.R     correlations entre variables
+               06_regression.R       regressions lineaire et logistique
+figures/                             graphiques PNG generes par 02
 reports/       rapport.Rmd / .pdf    rapport final
 ```
 
 ## Utilisation
 
 ```r
-Rscript scripts/01_exploration.R
-Rscript scripts/02_nettoyage.R
-Rscript scripts/03_viz.R
+Rscript scripts/01_exploration.R    # exploration initiale
+Rscript scripts/02_nettoyage.R      # genere arbres_clean.csv + figures/
+Rscript scripts/04_cartes.R         # cartes
+Rscript scripts/05_correlations.R   # correlations
+Rscript scripts/06_regression.R     # regressions
 ```
 
-Packages : `tidyverse`, `janitor`, `skimr`, `lubridate`, `stringi`.
+L'ordre compte : `02_nettoyage.R` doit etre lance avant les scripts 04-06
+(ils partent de `arbres_clean.csv`).
 
-## Choix de nettoyage
+Packages utilises : `tidyverse`, `lubridate`, `stringi`, `leaflet`, `sf`.
+
+## Choix de nettoyage (fonctionnalite 1 & 2)
 
 Decisions prises apres l'exploration (`scripts/01_exploration.R`) :
 
@@ -52,6 +59,5 @@ dates du fichier).
 
 ## Sortie
 
-`data/clean/arbres_clean.csv` : entree pour la partie IA (prediction
-`age_estim`, regression logistique "a abattre") et pour la carte
-(coordonnees X/Y en Lambert-93 a reprojeter).
+`data/clean/arbres_clean.csv` : fichier d'entree pour toutes les
+fonctionnalites suivantes (cartes, correlations, regressions).
