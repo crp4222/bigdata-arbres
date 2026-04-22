@@ -439,17 +439,17 @@ arbre.
 
 ## Harmonisation des zones
 
-Pour déterminer les zones où il faut planter des arbres pour harmoniser le développement global de la ville, on peut créer deux types de zones :
+Pour déterminer les zones où il faut planter des arbres afin d’harmoniser le développement global de la ville, on peut créer deux types de zones :
 
-- Les zones spacials : Ce sont les zones avec le moins d'arbres, par exemple, dans les quartiers suivants : HARLY, NEUVILLE, ROUVROY
-- Les zones temporels : Ce sont les zones avec des arbres vieux, sans trop d'arbres jeunes, par exemple, dans les quartiers suivants : Quartier de l'Europe, Remicourt, Centre-Ville
+- **Les zones spatiales** : ce sont les zones avec le moins d’arbres, par exemple dans les quartiers suivants : HARLY, NEUVILLE, ROUVROY
+- **Les zones temporelles** : ce sont les zones avec des arbres vieux, sans beaucoup d’arbres jeunes, par exemple dans les quartiers suivants : Quartier de l'Europe, Remicourt, Centre-Ville
 
 En rajoutant des arbres dans ces zones, on pourra harmoniser le développement global de la ville.
 
-## Etude de la régression linéaire
+## Étude de la régression linéaire
 
-Pour prédire la variable âge de l'arbre, il faut déjà se demander quelles variables peuvent permettre de la prédire. Après analyse, ces variables serait les meilleurs pour prédire l'âge d'un arbre :
-- Hauteur total de l'arbre
+Pour prédire la variable âge de l’arbre, il faut d’abord se demander quelles variables peuvent permettre de la prédire. Après analyse, ces variables seraient les meilleures pour prédire l’âge d’un arbre :
+- Hauteur totale de l’arbre
 - Hauteur du tronc
 - Diamètre du tronc
 
@@ -466,14 +466,16 @@ summary(modele_lm)
 ```
 
 On observe plusieurs choses :
-- On a un p-value inférieur à 0,05 sur la diamètre du tronc et sa hauteur, ce qui signifie que ces variables sont corrélé par l'âge (et donc aide à la prédiction)
-- Pour un âge de plus, on à une hauteur du tronc qui augmente de 3 (pente de 3 sur haut_tronc).
-- Le R² est de 0.63, ce qui signifie que 63% de la variabilité de l'âge est expliqué par les variables. Le modèle est donc plutôt correcte.
 
-## Etude de la régression logistique
+- On a une p-value **inférieure à 0,05** pour le diamètre du tronc et sa hauteur, ce qui signifie que ces variables sont corrélées avec l’âge (et donc aident à la prédiction)
+- Pour une année d’âge en plus, on a une hauteur du tronc qui augmente de 3 (pente de 3 sur haut_tronc).
+- Le R² est de 0,63, ce qui signifie que 63 % de la variabilité de l’âge est expliquée par les variables. Le modèle est donc plutôt correct dans ses prédictions.
 
-Pour savoir quels sont les arbres à abattre, il faut déjà se demander quelles variables peuvent permettre de le savoir. Après analyse, ces variables serait les meilleurs pour savoir les arbres à abattre :
-- Hauteur total de l'arbre
+## Étude de la régression logistique
+
+Pour savoir quels sont les arbres à abattre, il faut d’abord se demander quelles variables peuvent permettre de le déterminer. Après analyse, ces variables seraient les meilleures pour identifier les arbres à abattre :
+
+- Hauteur totale de l'arbre
 - Hauteur du tronc
 - Diamètre du tronc
 - L'âge estimé
@@ -499,9 +501,9 @@ modele_logit <- glm(a_abattre ~ haut_tot + haut_tronc + tronc_diam + age_estim +
 summary(modele_logit)
 ```
 
-On voit ici que les arbres jeunes sont les plus abattu (p-value inférieur à 0,05), mais on sait qu'on a que 3% de nos données qui sont des arbres abattu, donc on ne peux pas se fier à cette analyse.
+On voit ici que les arbres jeunes sont les plus abattus (p-value inférieure à 0,05), mais on sait qu’on n’a que 3 % de nos données qui concernent des arbres abattus, donc on ne peut pas se fier à cette analyse.
 
-Pour aller plus loin, une matrice de confusion à était crée :
+Pour aller plus loin, une matrice de confusion a été créée :
 ```{r matrice_de_confusion}
 proba <- predict(modele_logit, type = "response")
 arbres$prediction <- ifelse(proba > 0.5, 1, 0)
@@ -509,7 +511,7 @@ arbres$prediction <- ifelse(proba > 0.5, 1, 0)
 table(Predit = arbres$prediction, Reel = arbres$a_abattre)
 ```
 
-Dans la matrice de confusion, on peut voir que notre modèle prédit bien les arbres abattu mais comme dit plus haut, on n'a trop peu de données sur les arbres abattu donc on ne peux pas se fier à cette analyse (On verra avec la partie IA pour séparer les données en entrainement et en test).
+Dans la matrice de confusion, on peut voir que notre modèle prédit bien les arbres abattus, mais comme dit plus haut, on a trop peu de données sur les arbres abattus, donc on ne peut pas se fier à cette analyse (on verra dans la partie IA comment séparer les données en entraînement et en test).
 
 # Conclusion
 
