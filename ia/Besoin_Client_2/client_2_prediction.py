@@ -33,23 +33,7 @@ def predict_age(model, features):
     features_scaled = scaler.transform(features)
     return model.predict(features_scaled)[0]
 
-
 if __name__ == "__main__":
-    
-    # Menu
-    print("Choisissez un modèle :")
-    for key, (name, _) in models.items():
-        print(f"{key} - {name}")
-    
-    choice = int(input("Votre choix : "))
-    
-    if choice not in models:
-        print("Choix invalide")
-        exit()
-    
-    model_name, model = load_model(choice)
-    
-    print(f"Modèle sélectionné : {model_name}")
 
     # Features numériques
     hauteur_total = float(input("Hauteur totale : "))
@@ -66,7 +50,8 @@ if __name__ == "__main__":
     # Construire le vecteur
     columns = ["haut_tot", "haut_tronc", "tronc_diam", "fk_stadedev"]
     features = pd.DataFrame([[hauteur_total, hauteur, diametre, stade]], columns=columns)
-    
-    age = predict_age(model, features)
-    
-    print(f"Âge prédit : {age}")
+
+    for choice_model in models:
+        model_name, model = load_model(choice_model)
+        age = predict_age(model, features)
+        print(f"Âge prédit par {model_name} : {age}")
