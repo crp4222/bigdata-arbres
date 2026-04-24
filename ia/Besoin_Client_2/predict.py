@@ -31,6 +31,9 @@ chemin_encoder = Path(__file__).resolve().parent / "encoder.pkl"
 encoder = joblib.load(chemin_encoder)
 
 def parser_arguments():
+    """
+    Fonction pour passer les paramètres en ligne de commande
+    """
     p = argparse.ArgumentParser(description="Prediction de l'âge d'un arbre")
 
     # Variables numeriques obligatoires
@@ -48,29 +51,53 @@ def parser_arguments():
     return p.parse_args()
 
 def load_model(choice):
+    """
+    Fonction pour charger un modèle
+
+    Args:
+    choice (int) : Numéro du modèle choisi
+
+    return:
+    name (str) : Nom du modèle
+    model : L'objet du modèle
+    """
     name, path = models[choice]
     model = joblib.load(path)
     return name, model
 
 def predict_age(model, features):
+    """
+    Fonction pour prédire l'âge de l'arbre sur un modèle (Met les données en scaler)
+
+    args:
+    model : L'objet du modèle
+    features : Les paramètres pour prédire l'âge
+
+    return:
+    La prédiction du modèle
+    """
     features_scaled = scaler.transform(features)
     return model.predict(features_scaled)[0]
 
 def main():
+    # Récupération des arguments
     args = parser_arguments()
     
+    # Mise sous des variables
     hauteur_total = args.haut_tot
     hauteur = args.haut_tronc
     diametre = args.tronc_diam
+    stadedev = args.fk_stadedev.lower()
 
     # Construire le vecteur
     columns_encoder = ["fk_stadedev"]
     stade = pd.DataFrame([[
-    args.fk_stadedev.lower()]], columns=columns_encoder)
+        stadedev]], columns=columns_encoder)
     stade_encoding = encoder.transform(stade)
     columns = ["haut_tot", "haut_tronc", "tronc_diam", "fk_stadedev"]
     features = pd.DataFrame([[hauteur_total, hauteur, diametre, stade_encoding[0][0]]], columns=columns)
 
+    # Exécution de la prédiction sur tout les modèles
     for choice_model in models:
         model_name, model = load_model(choice_model)
         age = predict_age(model, features)
