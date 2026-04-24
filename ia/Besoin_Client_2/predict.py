@@ -65,7 +65,14 @@ def predict_age(model, features):
 def main():
     args = parser_arguments()
 
-    stade = stades.get(args.fk_stadedev)
+    try:
+        stade = stades[args.fk_stadedev.lower()]
+    except KeyError:
+        raise ValueError(
+            f"Valeur invalide pour --fk_stadedev : '{args.fk_stadedev.lower()}'. "
+            "Valeurs attendues : adulte, jeune, senescent, vieux."
+        )
+    
     hauteur_total = args.haut_tot
     hauteur = args.haut_tronc
     diametre = args.tronc_diam
