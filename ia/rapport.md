@@ -129,29 +129,37 @@ reutilises sans re-entrainement.
 
 ## Besoin client 2 – Modèle de prédiction de l’âge
 
-### Definir ce qu'on veut predire
+### Définir ce qu'on veut prédire
 
-Le besoin dit qu'on doit predire l'âge des arbres. Le probleme c'est 
-que les donnees ne contiennent pas cette information. La colonne la 
-plus proche c'est `age_estim`, qui est juste une estimation de l'âge.
+Le besoin indique qu'on doit prédire l'âge des arbres. Le problème,
+c'est que les données ne contiennent pas cette information. La 
+colonne la plus proche est `age_estim`, qui est simplement une
+estimation de l'âge.
 
-Cette variable étant réelle, il a été décidé d'utiliser la méthode
-par régression (qui est plus logique qu'une méthode de classification
+Cette variable étant réelle, il a été décidé d'utiliser une méthode
+de régression (ce qui est plus logique qu'une méthode de classification
 dans ce cas).
 
 ### Préparation des données
 
-**D'abord, on a dû décidé des caractéristique qui pourrait nous aider à**
-**déterminé l'âge**. On a tout d'abord retirer les composants qui ne serait 
-pas utilise (id, nom des arbres, ...), ce qui nous laisse les composants
-suivants :
+**D'abord, on a dû décider des caractéristiques qui pourraient nous aider**
+**à déterminer l'âge.** On a tout d'abord retiré les composants qui ne 
+seraient pas utiles (id, nom des arbres, ...), ce qui nous laisse les 
+variables suivantes :
 
-- "haut_tot", "haut_tronc", "tronc_diam", "fk_arb_etat", "fk_stadedev", 
-"fk_port", "fk_pied", "fk_revetement", "age_estim"
+- "haut_tot"
+- "haut_tronc"
+- "tronc_diam"
+- "fk_arb_etat"
+- "fk_stadedev", 
+- "fk_port"
+- "fk_pied"
+- "fk_revetement"
+- "age_estim"
 
-Ensuite, on a ensuite encoder les variables de type "object" (mise des 
-variables à chaine de caractère en nombre) pour ensuite faire une analyse
-de corrélation avec la variable `age_estim` :
+Ensuite, on a encodé les variables de type "object" (transformation des 
+chaînes de caractères en nombres), puis effectué une analyse de corrélation
+avec la variable `age_estim` :
 
 | Variables             | corrélation |
 | --------------------- | ----------- |
@@ -165,29 +173,29 @@ de corrélation avec la variable `age_estim` :
 | fk_revetement         | 0.097       |
 | age_estim             | 1.000       |
 
-Au vue des corrélations, on a décidé de garder les 4 caractéristiques suivants :
+Au vu des corrélations, on a décidé de garder les 4 caractéristiques suivantes :
 
 - haut_tot
 - haut_tronc
 - tronc_diam
 - fk_stadedev
 
-Enfin, pour finir, on a décidé d'enlever les valeurs vides dans les données 
-(on perd 18% des données mais on a au moins la certitude de ne pas biaisé les 
-modèles) et on sépare les données en deux (entrainement et test) et un scaler 
-pour éviter les grands valeurs qui pourrait être présent dans les données.
+Enfin, pour finir, on a décidé d'enlever les valeurs manquantes dans les données 
+(on perd 18 % des données, mais on a au moins la certitude de ne pas biaiser les 
+modèles). On sépare ensuite les données en deux ensembles (entraînement et test) 
+et on applique un scaler pour éviter les grandes valeurs qui pourraient être 
+présentes dans les données.
 
 ### Création des modèles
 
-Pour les modèles, on est parti sur trois types de modèles :
+Pour les modèles, on est parti sur trois types :
 
 - LinearRegression
 - DecisionTreeRegressor
 - RandomForestRegressor
 
-Dans ces trois modèles, on les à entrainé avec les données d'entrainement puis 
-on a testé des prédictions avec les données de test pour ressortir les métriques 
-suivants :
+Ces trois modèles ont été entraînés avec les données d'entraînement, puis testés 
+sur les données de test afin d'obtenir les métriques suivantes :
 
 | Modele                | MSE         | RMSE          | MAE     | R2            |
 | --------------------- | ----------- | ------------- | ------- | ------------- |
@@ -195,18 +203,17 @@ suivants :
 | Decision Tree         | 130.96      | 11.44         | 6.89    | 0.66          |
 | Random Forest         | 153.93      | 12.41         | 8.98    | 0.60          |
 
-Les métriques 1 à 3 (MSE, RMSE et MAE) permet de savoir l'erreur que font les 
-modèles et le R2 permet de savoir si le modèle arrive bien à prédire l'âge.
-
 MSE = Erreur quadratique moyenne
 RMSE = Racine carrée du MSE
 MAE = Erreur absolue moyenne
 R2 = Mesure la qualité globale du modèle
 
-On va que nos modèles sont plutôt correcte dans l'ensemble.
+Les métriques 1 à 3 (MSE, RMSE et MAE) permettent de mesurer l'erreur des modèles, 
+tandis que le R² permet d'évaluer leur capacité à prédire l'âge.
 
-On a aussi des tableaux des résultats sur les modèles pour voir plus précisement
- les prédiction :
+On voit que nos modèles sont globalement corrects.
+
+On a aussi des tableaux de résultats pour observer plus précisément les prédictions :
 
 Regression linéaire :
 
@@ -240,11 +247,11 @@ Random Forest :
 
 ### Optimisation des modèles
 
-Pour la régression linéaire, il n'y a pas d'optimisation possible car pas
-d'hyperparamètres (on ne pourra pas faire mieux).
+Pour la régression linéaire, il n'y a pas d'optimisation possible car il n'y a pas
+ d'hyperparamètres (on ne pourra pas faire mieux).
 
-Par contre, pour les modèles Decision Tree et Random Forest, des 
-hyperparamètres sont possibles.
+En revanche, pour les modèles Decision Tree et Random Forest, des hyperparamètres
+sont disponibles :
 
 - "n_estimators" (pour Random Forest) = Nombre d’arbres dans la forêt
 - "max_depth" = Profondeur maximale d’un arbre
@@ -252,8 +259,8 @@ hyperparamètres sont possibles.
 - "min_samples_leaf" = Nombre minimum d’échantillons dans une feuille
 - "max_features" = Nombre de variables considérées à chaque split.
 
-On a choisi quelques paramètres à tester pour, au final, générer deux 
-nouveaux modèles optimisé :
+On a choisi plusieurs paramètres à tester afin de générer deux nouveaux modèles 
+optimisés :
 
 | Modele                | MSE         | RMSE          | MAE     | R2            |
 | --------------------- | ----------- | ------------- | ------- | ------------- |
@@ -282,8 +289,28 @@ Random Forest :
 | 50.0                  | 32.685126   |
 | 50.0                  | 37.933871   |
 
-On peut donc voir que les modèles ont était quand même amélioré.
+On peut donc voir que les modèles ont été améliorés.
 
+# Livrable final
+
+### Livrable final
+
+Le script `predict.py` (qui se trouve dans le dossier `Besoin_Client_2`) charge 
+les modeles sauvegardes (`.pkl`) + les scaler et encoder et prédit l'âge d'un nouvel arbre 
+en une fraction de seconde a partir de son hauteur total, la hauteur de son tronc, 
+le diamètre de son tronc et de son stade de développement :
+
+```
+python predict.py --haut_tot 7 --haut_tronc 2 --tronc_diam 48 --fk_stadedev jeune
+->
+Âge prédit par Linear Regression : 15.00
+Âge prédit par Decision Tree : 16.65
+Âge prédit par Random Forest : 16.43
+```
+
+Les modèles sont sauvegardés une seule fois depuis le notebook et réutilisés sans réentraînement.
+
+---
 
 ## Besoin client 3 - Systeme d'alerte pour les tempetes
 
