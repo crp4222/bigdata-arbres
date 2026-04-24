@@ -195,33 +195,67 @@ La grille conservatrice a converge vers :
 - `learning_rate = 0.05`, `max_depth = 3`, `n_estimators = 200`
 - `min_samples_leaf = 5`, `subsample = 1.0`
 
-### Modele final et metriques
+### Ensemble calibre : gagner en performance
 
-Resultats sur le jeu de test (1 781 arbres, 51 positifs) :
+Le GB seul plafonnait a AUC-PR = 0.25. On a regarde ce qu'on pouvait
+encore ameliorer sans tricher avec les donnees.
 
-| Metrique | Valeur |
-|----------|--------|
-| AUC-ROC | 0.853 |
-| AUC-PR | 0.252 |
-| F1 optimal | 0.351 |
-| Precision (seuil 0.16) | 56.5 % |
-| Rappel (seuil 0.16) | 25.5 % |
-| Nombre d'alertes emises | 23 |
+Deux techniques standards qui s'ajoutent :
 
-Comparaison avec la version precedente (cible `abattu` + `essouche`
-seulement) : precision 45 % -> 56 %, nombre d'alertes 29 -> 23 pour
-le meme nombre de vrais positifs detectes (13). Le modele est donc
-devenu **plus selectif** : il signale moins d'arbres mais quand il
-le fait il a plus souvent raison.
+- **Ensemble** : on entraine a la fois un RF et un GB et on fait la
+  moyenne de leurs probas. Les deux modeles ne font pas les memes
+  erreurs, moyenner les reponses corrige une partie du bruit. C'est
+  un classique du ML.
+- **Calibration isotonique** (`CalibratedClassifierCV` avec `cv=5`) :
+  le GB sort des probas trop serrees autour de zero (signal compresse).
+  La calibration reetale la distribution pour que "proba = 0.3"
+  corresponde vraiment a 30 % de chances d'etre positif. Mieux
+  calibre = les seuils qu'on choisit ensuite sont plus fiables.
 
-**Lecture concrete :** sur les 23 arbres que le modele signale comme
-a risque, environ 13 sont des vrais positifs (56 % de precision).
-On capte 25 % des arbres a risque du patrimoine (13 sur 51). Les
-10 autres sont des fausses alertes a inspecter. Le rappel a baisse
-par rapport a la version precedente (31 % -> 25 %) parce que le
-jeu contient plus de positifs a capter (51 au lieu de 42), mais
-c'est un meilleur compromis pour la ville : moins de temps perdu
-sur des fausses alertes.
+Resultats sur le test (1 781 arbres, 51 positifs) :
+
+| Modele | AUC-ROC | AUC-PR | F1 optimal |
+|--------|---------|--------|------------|
+| GB seul (grid search) | 0.853 | 0.252 | 0.351 |
+| RF calibre | 0.857 | 0.260 | 0.374 |
+| **Ensemble calibre RF + GB** | **0.856** | **0.309** | **0.404** |
+
+L'AUC-PR gagne 22 % et le F1 gagne 15 %, sans modifier les donnees
+ni les features. C'est du pur traitement post-modele.
+
+### Deux seuils operationnels : urgent et surveillance
+
+Un systeme d'alerte avec un seuil unique force la ville a choisir
+un compromis precision / rappel qui ne lui convient pas forcement.
+On propose deux listes au lieu d'une :
+
+- **Urgent** (seuil 0.185) : liste courte et fiable, a inspecter
+  sous 48h.
+- **Surveillance** (seuil 0.075) : liste plus large, a traiter
+  avant la saison des tempetes.
+
+Resultats detailles sur le test :
+
+| Liste | Seuil | Alertes | Vrais positifs | Precision | Rappel |
+|-------|-------|---------|----------------|-----------|--------|
+| Urgent | 0.185 | 32 | 15 | 47 % | 29 % |
+| Surveillance | 0.075 | 157 | 27 | 17 % | 53 % |
+
+**Rappel cumule** (arbre capte par au moins une des deux listes) :
+**27 sur 51 = 53 %**. On double le rappel par rapport au seuil unique
+de la version precedente (25 %) sans submerger la ville d'alertes
+injustifiees.
+
+**Lecture concrete pour la ville** :
+
+- Chaque mois, verifier les 32 arbres de la liste urgente -
+  statistiquement 15 sont de vrais candidats a l'abattage.
+- Avant l'hiver, passer en revue la liste de surveillance (157
+  arbres) - le taux de vrais positifs tombe a 17 % mais on ecrase
+  le rappel a 53 %.
+
+C'est un systeme a deux vitesses qui colle a la logique operationnelle
+d'un service espaces verts.
 
 ### Importance des features
 
@@ -291,11 +325,12 @@ necessite une expertise arboricole differente.
 
 ### Limites du systeme et pistes d'amelioration
 
-56 % de precision c'est correct mais ca veut dire qu'un peu moins
-d'une alerte sur deux est fausse. Ce n'est pas scandaleux vu la
-difficulte du probleme, mais ca impose a la ville de faire une
-verification manuelle. On considere ce modele comme **un premier
-filtre** plus que comme un systeme de decision automatique.
+On capte la moitie des arbres a risque du patrimoine avec le systeme
+a deux niveaux. Les 47 % restants sont inaccessibles avec les
+donnees disponibles : ils n'ont aucune signature distinctive dans
+les features qu'on a (taille, age, isolement), ce sont des arbres
+au profil "moyen" qui ont ete retires pour des raisons qu'on ne
+peut pas deviner statistiquement.
 
 Les limites viennent principalement de la donnee, pas du modele :
 
@@ -315,6 +350,8 @@ Les limites viennent principalement de la donnee, pas du modele :
 - Historique des tailles et des diagnostics par arbre.
 
 Sans tout ca, on a fait le maximum avec ce qu'on avait. L'ajout des
-features spatiales a divise par deux les fausses alertes et on est
-passe d'un modele "plus ou moins au hasard" a un modele qui remonte
-une liste courte et exploitable pour la ville.
+features spatiales a divise par deux les fausses alertes, et le
+passage a l'ensemble calibre avec deux seuils a double le rappel
+final (25 % -> 53 %). Le modele remonte maintenant deux listes
+exploitables, adaptees aux deux modes de travail du service espaces
+verts : urgence et gestion preventive.

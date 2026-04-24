@@ -8,7 +8,7 @@ Contenu du dossier
 - 01_prepare_data.py     : script qui produit data.csv
 - notebook.py            : notebook source (cellules delimitees par "# %%")
 - notebook.ipynb         : notebook execute avec outputs (livrable)
-- modele.pkl             : modele final entraine + seuil + BallTree
+- modele.pkl             : modele final (ensemble RF+GB calibre) + 2 seuils + BallTree
 - predict.py             : script final CLI pour predire sur un nouvel arbre
 - figures/               : courbes ROC / precision-rappel / importance
 - README.txt             : ce fichier
@@ -31,12 +31,18 @@ Exemple d'arbre a risque :
       --remarquable oui --clc_quartier "centre ville"
 
 Sortie attendue :
-  Probabilite de risque : <0.16 ou plus>
-  Seuil d'alerte        : 0.160
-  Features spatiales calculees pour cet arbre :
+  Probabilite de risque : 0.20
+  Seuil urgent          : 0.185
+  Seuil surveillance    : 0.075
+  Features spatiales :
     voisins dans 20 m  : ...
     ...
-  >>> ALERTE : arbre potentiellement a risque
+  >>> URGENT : a inspecter en priorite (sous 48h)
+
+Le script renvoie 3 niveaux :
+  - URGENT         : proba >= seuil urgent, inspection prioritaire
+  - SURVEILLANCE   : proba >= seuil surveillance, a inspecter avant l'hiver
+  - PAS D'ALERTE   : arbre considere comme stable
 
 
 Arguments obligatoires
