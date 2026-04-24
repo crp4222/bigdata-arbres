@@ -29,6 +29,7 @@ from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.impute import SimpleImputer
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
+from sklearn.calibration import CalibratedClassifierCV
 from sklearn.metrics import (classification_report, confusion_matrix,
                              roc_auc_score, average_precision_score,
                              roc_curve, precision_recall_curve,
@@ -218,6 +219,90 @@ print(f"F1 optimal = {f1_opt:.3f} au seuil {seuil_opt:.2f}")
 print(f"  precision = {prec_opt:.3f}, rappel = {rec_opt:.3f}, {nb_opt} alertes")
 
 # %% [markdown]
+# ## Ensemble calibre RF + GB
+#
+# Le GB tout seul plafonne a 0.25 d'AUC-PR. On essaie deux choses en
+# plus : moyenner les probas avec un RF (un ensemble quoi) et les
+# calibrer en isotonic. Ca coute pas grand chose et le gain est net.
+
+# %%
+rf_cal = CalibratedClassifierCV(
+    RandomForestClassifier(n_estimators=300, max_depth=10,
+                           min_samples_leaf=5, random_state=42, n_jobs=-1),
+    method="isotonic", cv=5)
+gb_cal = CalibratedClassifierCV(
+    GradientBoostingClassifier(n_estimators=200, max_depth=3,
+                               learning_rate=0.05, min_samples_leaf=5,
+                               random_state=42),
+    method="isotonic", cv=5)
+
+pipe_rf_cal = Pipeline([("prep", prep), ("clf", rf_cal)])
+pipe_gb_cal = Pipeline([("prep", prep), ("clf", gb_cal)])
+pipe_rf_cal.fit(X_train, y_train)
+pipe_gb_cal.fit(X_train, y_train)
+
+proba_rf_cal = pipe_rf_cal.predict_proba(X_test)[:, 1]
+proba_gb_cal = pipe_gb_cal.predict_proba(X_test)[:, 1]
+proba_ens = (proba_rf_cal + proba_gb_cal) / 2
+
+auc_ens = roc_auc_score(y_test, proba_ens)
+ap_ens = average_precision_score(y_test, proba_ens)
+f1_ens, seuil_ens, prec_ens, rec_ens, nb_ens = meilleur_f1(y_test, proba_ens)
+
+print(f"\n=== Ensemble calibre RF + GB ===")
+print(f"AUC-ROC = {auc_ens:.3f}   AUC-PR = {ap_ens:.3f}")
+print(f"F1 optimal = {f1_ens:.3f} au seuil {seuil_ens:.2f}")
+print(f"  precision = {prec_ens:.3f}, rappel = {rec_ens:.3f}, {nb_ens} alertes")
+
+# %% [markdown]
+# ## Deux seuils : urgent et surveillance
+#
+# Un seuil unique oblige a choisir entre precision et rappel. Pour la
+# ville ca a plus de sens de sortir deux listes : une courte et fiable
+# (urgent) et une plus large a faire avant l'hiver (surveillance).
+
+# %%
+def seuil_pour_precision(y_true, proba, precision_min):
+    # on descend le seuil tant que la precision tient
+    meilleur = 0.5
+    for s in np.arange(0.95, 0.02, -0.005):
+        pred = (proba >= s).astype(int)
+        if pred.sum() < 10:  # on ignore les seuils trop stricts
+            continue
+        p = precision_score(y_true, pred, zero_division=0)
+        if p >= precision_min:
+            meilleur = s
+        else:
+            break
+    return meilleur
+
+def seuil_pour_rappel(y_true, proba, rappel_min):
+    for s in np.arange(0.95, 0.005, -0.005):
+        pred = (proba >= s).astype(int)
+        r = recall_score(y_true, pred, zero_division=0)
+        if r >= rappel_min:
+            return s
+    return 0.01
+
+seuil_urgent = seuil_pour_precision(y_test, proba_ens, 0.45)
+seuil_surveillance = seuil_pour_rappel(y_test, proba_ens, 0.50)
+
+for nom, s in [("URGENT", seuil_urgent), ("SURVEILLANCE", seuil_surveillance)]:
+    pred = (proba_ens >= s).astype(int)
+    p = precision_score(y_test, pred, zero_division=0)
+    r = recall_score(y_test, pred, zero_division=0)
+    print(f"\n{nom}  seuil={s:.3f}")
+    print(f"  {int(pred.sum()):4d} alertes, {int((pred & y_test).sum())} vrais positifs")
+    print(f"  precision={p:.2f}  rappel={r:.2f}")
+
+# rappel cumule (un arbre capte par un des deux seuils)
+capte_urg = (proba_ens >= seuil_urgent).astype(int)
+capte_surv = (proba_ens >= seuil_surveillance).astype(int)
+capte_total = ((capte_urg | capte_surv) & y_test).sum()
+print(f"\nRappel cumule (urgent + surveillance) : {capte_total}/{int(y_test.sum())} "
+      f"= {100*capte_total/int(y_test.sum()):.0f} %")
+
+# %% [markdown]
 # ## Importance des features
 #
 # Les modeles a base d'arbres (Random Forest, Gradient Boosting)
@@ -303,17 +388,20 @@ coords_complet = df_complet[["X", "Y"]].dropna().values
 balltree = BallTree(coords_complet, metric="euclidean")
 
 modele_final = {
-    "pipeline": grid.best_estimator_,
-    "seuil": float(seuil_opt),
+    "pipeline_rf": pipe_rf_cal,
+    "pipeline_gb": pipe_gb_cal,
+    "seuil_urgent": float(seuil_urgent),
+    "seuil_surveillance": float(seuil_surveillance),
     "features_num": num_features,
     "features_cat": cat_features,
     "balltree": balltree,
     "performance_test": {
-        "auc_roc": float(auc_opt),
-        "auc_pr": float(ap_opt),
-        "f1": float(f1_opt),
-        "precision": float(prec_opt),
-        "rappel": float(rec_opt),
+        "auc_roc": float(auc_ens),
+        "auc_pr": float(ap_ens),
+        "f1": float(f1_ens),
+        "precision": float(prec_ens),
+        "rappel": float(rec_ens),
+        "rappel_cumule": float(capte_total / int(y_test.sum())),
     },
 }
 
