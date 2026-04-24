@@ -28,7 +28,7 @@ df = pd.read_csv(CSV_IN)
 print("Lignes au depart :", len(df))
 
 # 1. Construction de la cible binaire
-a_risque = ["abattu", "essouch'e"]
+a_risque = ["abattu", "essouche"]
 pas_a_risque = ["en place"]
 
 df = df[df["fk_arb_etat"].isin(a_risque + pas_a_risque)].copy()
