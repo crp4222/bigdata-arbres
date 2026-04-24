@@ -1,8 +1,4 @@
 """
-Script Besoin Client 1 — Visualisation sur carte (clustering par taille)
-
-Usage : python script_besoin1.py --haut_tot <valeur> --tronc_diam <valeur> [--n_clusters <2|3|4>]
-
 Exemples :
   python script_besoin1.py --haut_tot 8 --tronc_diam 90
   python script_besoin1.py --haut_tot 8 --tronc_diam 90 --n_clusters 2
