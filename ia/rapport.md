@@ -43,38 +43,31 @@ commentaires renseignes mais ce qu'on y trouve est tres parlant :
 
 ### Premiere version de la cible
 
-A partir de ces observations on a pris comme premiere definition :
+Au depart on a pris :
 
-- **Arbre a risque (classe 1)** : les arbres `abattu` et `essouche`.
-- **Arbre sans risque (classe 0)** : les arbres `en place`.
-- **Lignes qu'on enleve du jeu** : `remplace`, `supprime` et
-  `non essouche` (au depart on avait ecarte cette derniere categorie
-  en pensant que le profil ressemblait a "en place").
+- classe 1 : `abattu` et `essouche`
+- classe 0 : `en place`
+- exclus : `remplace`, `supprime` et `non essouche` (on pensait que
+  le profil des non essouche ressemblait aux en place).
 
-### Revision de la cible apres benchmark
+### On revise : on met les "non essouche" en positifs
 
-Une fois le modele en place on a voulu verifier si notre choix de
-cible etait le bon. On a teste en entrainant a nouveau avec la
-categorie `non essouche` classee comme positive. Un arbre "non
-essouche" c'est un arbre qui a ete coupe mais dont on a laisse la
-souche en terre, donc c'est aussi un arbre tombe ou retire, pas un
-arbre "en place" comme on avait cru.
+Une fois le premier modele en place on a voulu verifier. Un arbre
+"non essouche" c'est un arbre coupe dont la souche est restee, donc
+c'est aussi un arbre retire et pas un arbre "en place". On a re-entraine
+en les comptant comme positifs et on a compare.
 
-Resultat du comparatif sur les trois modeles :
-
-| Modele | AUC-PR sans "non essouche" | AUC-PR avec | F1 sans | F1 avec |
-|--------|----------------------------|-------------|---------|---------|
+| Modele | AUC-PR sans | AUC-PR avec | F1 sans | F1 avec |
+|--------|-------------|-------------|---------|---------|
 | Regression logistique | 0.172 | 0.161 | 0.197 | 0.208 |
 | Random Forest | 0.239 | 0.264 (+10 %) | 0.324 | 0.370 (+14 %) |
 | Gradient Boosting | 0.236 | 0.284 (+20 %) | 0.329 | 0.348 |
 
-Le gain est net sur les modeles a arbres, qui sont les plus
-performants. La decision finale a donc ete :
+Le gain est net sur RF et GB. On a donc garde :
 
-- **Classe 1** : `abattu`, `essouche`, `non essouche`
-- **Classe 0** : `en place`
-- **Exclus** : `remplace` (gestion du patrimoine), `supprime`
-  (travaux).
+- classe 1 : `abattu`, `essouche`, `non essouche`
+- classe 0 : `en place`
+- exclus : `remplace` (renouvellement urbain) et `supprime` (travaux)
 
 ### Tentative de validation avec les dates d'abattage
 
@@ -195,67 +188,50 @@ La grille conservatrice a converge vers :
 - `learning_rate = 0.05`, `max_depth = 3`, `n_estimators = 200`
 - `min_samples_leaf = 5`, `subsample = 1.0`
 
-### Ensemble calibre : gagner en performance
+### Ensemble calibre
 
-Le GB seul plafonnait a AUC-PR = 0.25. On a regarde ce qu'on pouvait
-encore ameliorer sans tricher avec les donnees.
+Le GB seul plafonnait a AUC-PR 0.25. On a essaye deux trucs en plus
+avant d'abandonner : un ensemble RF + GB (on moyenne les probas) et
+une calibration isotonique via `CalibratedClassifierCV`. La
+calibration aide parce que le GB sort des probas tres serrees autour
+de zero, c'est difficile ensuite de choisir un seuil propre.
 
-Deux techniques standards qui s'ajoutent :
-
-- **Ensemble** : on entraine a la fois un RF et un GB et on fait la
-  moyenne de leurs probas. Les deux modeles ne font pas les memes
-  erreurs, moyenner les reponses corrige une partie du bruit. C'est
-  un classique du ML.
-- **Calibration isotonique** (`CalibratedClassifierCV` avec `cv=5`) :
-  le GB sort des probas trop serrees autour de zero (signal compresse).
-  La calibration reetale la distribution pour que "proba = 0.3"
-  corresponde vraiment a 30 % de chances d'etre positif. Mieux
-  calibre = les seuils qu'on choisit ensuite sont plus fiables.
-
-Resultats sur le test (1 781 arbres, 51 positifs) :
+Sur le test (1 781 arbres, 51 positifs) :
 
 | Modele | AUC-ROC | AUC-PR | F1 optimal |
 |--------|---------|--------|------------|
 | GB seul (grid search) | 0.853 | 0.252 | 0.351 |
 | RF calibre | 0.857 | 0.260 | 0.374 |
-| **Ensemble calibre RF + GB** | **0.856** | **0.309** | **0.404** |
+| Ensemble calibre RF + GB | 0.856 | 0.309 | 0.404 |
 
-L'AUC-PR gagne 22 % et le F1 gagne 15 %, sans modifier les donnees
-ni les features. C'est du pur traitement post-modele.
+L'AUC-PR gagne 22 % et le F1 gagne 15 %. On n'a touche ni aux
+donnees ni aux features, c'est uniquement du traitement post-modele.
 
-### Deux seuils operationnels : urgent et surveillance
+### Deux seuils : urgent et surveillance
 
-Un systeme d'alerte avec un seuil unique force la ville a choisir
-un compromis precision / rappel qui ne lui convient pas forcement.
-On propose deux listes au lieu d'une :
+Sortir un seul seuil force la ville a choisir entre precision et
+rappel. On prefere sortir deux listes :
 
-- **Urgent** (seuil 0.185) : liste courte et fiable, a inspecter
-  sous 48h.
-- **Surveillance** (seuil 0.075) : liste plus large, a traiter
-  avant la saison des tempetes.
+- **Urgent** (seuil 0.185) : liste courte, a inspecter vite
+- **Surveillance** (seuil 0.075) : liste large, a faire avant l'hiver
 
-Resultats detailles sur le test :
+Ce que ca donne sur le test :
 
 | Liste | Seuil | Alertes | Vrais positifs | Precision | Rappel |
 |-------|-------|---------|----------------|-----------|--------|
 | Urgent | 0.185 | 32 | 15 | 47 % | 29 % |
 | Surveillance | 0.075 | 157 | 27 | 17 % | 53 % |
 
-**Rappel cumule** (arbre capte par au moins une des deux listes) :
-**27 sur 51 = 53 %**. On double le rappel par rapport au seuil unique
-de la version precedente (25 %) sans submerger la ville d'alertes
-injustifiees.
+En cumulant les deux, on capte 27 arbres a risque sur 51, soit 53 %.
+C'est le double du rappel d'avant (25 %) sans noyer la ville sous
+des alertes inutiles.
 
-**Lecture concrete pour la ville** :
+En pratique :
+- liste urgente : 32 arbres, 15 vrais a inspecter rapidement
+- liste surveillance : 157 arbres, a etaler sur l'annee
 
-- Chaque mois, verifier les 32 arbres de la liste urgente -
-  statistiquement 15 sont de vrais candidats a l'abattage.
-- Avant l'hiver, passer en revue la liste de surveillance (157
-  arbres) - le taux de vrais positifs tombe a 17 % mais on ecrase
-  le rappel a 53 %.
-
-C'est un systeme a deux vitesses qui colle a la logique operationnelle
-d'un service espaces verts.
+Ca colle au fonctionnement reel d'un service espaces verts qui a
+des priorites differentes selon la saison.
 
 ### Importance des features
 

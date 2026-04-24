@@ -221,15 +221,9 @@ print(f"  precision = {prec_opt:.3f}, rappel = {rec_opt:.3f}, {nb_opt} alertes")
 # %% [markdown]
 # ## Ensemble calibre RF + GB
 #
-# Le GB seul plafonne a AUC-PR ~0.25. On teste deux ameliorations :
-#
-# - **Ensemble** : on entraine un RF et un GB et on moyenne leurs
-#   probas. Les deux modeles ne font pas les memes erreurs, leur
-#   moyenne est plus stable.
-# - **Calibration isotonique** (`CalibratedClassifierCV`) : corrige
-#   la distribution des probas pour qu'elles reflechissent mieux la
-#   vraie frequence des positifs. Un GB sort des probas serrees
-#   autour de zero, la calibration les etale.
+# Le GB tout seul plafonne a 0.25 d'AUC-PR. On essaie deux choses en
+# plus : moyenner les probas avec un RF (un ensemble quoi) et les
+# calibrer en isotonic. Ca coute pas grand chose et le gain est net.
 
 # %%
 rf_cal = CalibratedClassifierCV(
@@ -261,22 +255,15 @@ print(f"F1 optimal = {f1_ens:.3f} au seuil {seuil_ens:.2f}")
 print(f"  precision = {prec_ens:.3f}, rappel = {rec_ens:.3f}, {nb_ens} alertes")
 
 # %% [markdown]
-# ## Deux seuils operationnels : urgent et surveillance
+# ## Deux seuils : urgent et surveillance
 #
-# Pour une vraie utilisation par la ville on ne donne pas UN seuil
-# mais DEUX niveaux :
-#
-# - **urgent** : liste courte et fiable, a inspecter en priorite
-# - **surveillance** : liste plus large, a inspecter avant l'hiver
-#
-# On choisit l'urgent pour maximiser la precision tout en gardant
-# un rappel decent. La surveillance vise un rappel plus eleve en
-# acceptant plus de fausses alertes.
+# Un seuil unique oblige a choisir entre precision et rappel. Pour la
+# ville ca a plus de sens de sortir deux listes : une courte et fiable
+# (urgent) et une plus large a faire avant l'hiver (surveillance).
 
 # %%
 def seuil_pour_precision(y_true, proba, precision_min):
-    # on balaie du seuil le plus haut vers le plus bas,
-    # on s'arrete quand la precision descend sous la cible
+    # on descend le seuil tant que la precision tient
     meilleur = 0.5
     for s in np.arange(0.95, 0.02, -0.005):
         pred = (proba >= s).astype(int)
