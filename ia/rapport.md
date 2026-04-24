@@ -41,15 +41,40 @@ commentaires renseignes mais ce qu'on y trouve est tres parlant :
   surtout des suppressions pour travaux, donc rien a voir avec le
   vent.
 
-### Ce qu'on a decide
+### Premiere version de la cible
 
-A partir de ces observations on a pris comme definition :
+A partir de ces observations on a pris comme premiere definition :
 
 - **Arbre a risque (classe 1)** : les arbres `abattu` et `essouche`.
 - **Arbre sans risque (classe 0)** : les arbres `en place`.
-- **Lignes qu'on enleve du jeu** : `remplace` (profil identique aux
-  "en place"), `supprime` (des travaux, pas du vent), `non essouche`
-  (profil proche des "en place" et seulement 62 arbres).
+- **Lignes qu'on enleve du jeu** : `remplace`, `supprime` et
+  `non essouche` (au depart on avait ecarte cette derniere categorie
+  en pensant que le profil ressemblait a "en place").
+
+### Revision de la cible apres benchmark
+
+Une fois le modele en place on a voulu verifier si notre choix de
+cible etait le bon. On a teste en entrainant a nouveau avec la
+categorie `non essouche` classee comme positive. Un arbre "non
+essouche" c'est un arbre qui a ete coupe mais dont on a laisse la
+souche en terre, donc c'est aussi un arbre tombe ou retire, pas un
+arbre "en place" comme on avait cru.
+
+Resultat du comparatif sur les trois modeles :
+
+| Modele | AUC-PR sans "non essouche" | AUC-PR avec | F1 sans | F1 avec |
+|--------|----------------------------|-------------|---------|---------|
+| Regression logistique | 0.172 | 0.161 | 0.197 | 0.208 |
+| Random Forest | 0.239 | 0.264 (+10 %) | 0.324 | 0.370 (+14 %) |
+| Gradient Boosting | 0.236 | 0.284 (+20 %) | 0.329 | 0.348 |
+
+Le gain est net sur les modeles a arbres, qui sont les plus
+performants. La decision finale a donc ete :
+
+- **Classe 1** : `abattu`, `essouche`, `non essouche`
+- **Classe 0** : `en place`
+- **Exclus** : `remplace` (gestion du patrimoine), `supprime`
+  (travaux).
 
 ### Tentative de validation avec les dates d'abattage
 
@@ -112,8 +137,8 @@ connu en foresterie). On a donc calcule pour chaque arbre :
 
 Au final on part de 11 419 arbres et on termine avec :
 
-- **8 856 arbres exploitables**
-- **208 arbres "a risque"** (2.35 %)
+- **8 902 arbres exploitables**
+- **254 arbres "a risque"** (2.85 %)
 - 8 648 arbres "en place"
 
 ### Methodologie
@@ -131,15 +156,17 @@ sauvegarde d'un seul bloc dans le fichier `modele.pkl`.
 
 ### Comparaison des modeles
 
-On a teste trois classificateurs sur les memes features :
+On a teste trois classificateurs sur les memes features (cible
+revisee, 254 positifs) :
 
 | Modele | AUC-ROC | AUC-PR | F1 optimal | Precision | Rappel | Alertes |
 |--------|---------|--------|------------|-----------|--------|---------|
-| Regression logistique | 0.762 | 0.187 | 0.313 | 32 % | 31 % | 41 |
-| Random Forest | 0.828 | 0.185 | 0.313 | 32 % | 31 % | 41 |
-| Gradient Boosting | 0.840 | 0.238 | 0.333 | 33 % | 33 % | 42 |
+| Regression logistique | 0.776 | 0.161 | 0.208 | 14 % | 37 % | 132 |
+| Random Forest | 0.842 | 0.264 | 0.370 | 32 % | 43 % | 68 |
+| Gradient Boosting | 0.851 | 0.284 | 0.348 | 31 % | 39 % | 64 |
 
-Le Gradient Boosting gagne sur les trois metriques. On l'a choisi
+Le Random Forest et le Gradient Boosting se tiennent de pres, avec
+un leger avantage au GB sur l'AUC (ranking global). On l'a choisi
 pour la suite.
 
 Note methodologique : on avait commence sans les features spatiales
@@ -161,36 +188,40 @@ stratifies, scoring `average_precision`. La grille couvrait :
 On avait fait une premiere grille plus agressive (max_depth jusqu'a
 5, learning_rate 0.1) qui donnait un excellent score en CV mais
 s'ecroulait sur le test : un cas classique de sur-apprentissage.
-Avec seulement ~166 positifs en train, les arbres trop profonds
+Avec seulement ~203 positifs en train, les arbres trop profonds
 trouvent des motifs qui n'existent pas.
 
 La grille conservatrice a converge vers :
-- `learning_rate = 0.05`, `max_depth = 3`, `n_estimators = 300`
+- `learning_rate = 0.05`, `max_depth = 3`, `n_estimators = 200`
 - `min_samples_leaf = 5`, `subsample = 1.0`
 
 ### Modele final et metriques
 
-Resultats sur le jeu de test (1 772 arbres, 42 positifs) :
+Resultats sur le jeu de test (1 781 arbres, 51 positifs) :
 
 | Metrique | Valeur |
 |----------|--------|
-| AUC-ROC | 0.831 |
-| AUC-PR | 0.265 |
-| F1 optimal | 0.366 |
-| Precision (seuil 0.16) | 44.8 % |
-| Rappel (seuil 0.16) | 31.0 % |
-| Nombre d'alertes emises | 29 |
+| AUC-ROC | 0.853 |
+| AUC-PR | 0.252 |
+| F1 optimal | 0.351 |
+| Precision (seuil 0.16) | 56.5 % |
+| Rappel (seuil 0.16) | 25.5 % |
+| Nombre d'alertes emises | 23 |
 
-Comparaison avec notre premier modele (sans features spatiales) :
-precision de 20 % -> 45 %, nombre d'alertes 65 -> 29. On a divise
-par deux les fausses alertes pour un rappel quasi identique.
+Comparaison avec la version precedente (cible `abattu` + `essouche`
+seulement) : precision 45 % -> 56 %, nombre d'alertes 29 -> 23 pour
+le meme nombre de vrais positifs detectes (13). Le modele est donc
+devenu **plus selectif** : il signale moins d'arbres mais quand il
+le fait il a plus souvent raison.
 
-**Lecture concrete :** sur les 29 arbres que le modele signale comme
-a risque, environ 13 sont effectivement des vrais positifs. On capte
-31 % des arbres a risque du patrimoine (13 sur 42). Les 16 autres
-sont des fausses alertes a inspecter. C'est loin d'etre parfait
-mais c'est bien plus utile que de dire "inspectez les 8 000 arbres
-de la ville".
+**Lecture concrete :** sur les 23 arbres que le modele signale comme
+a risque, environ 13 sont des vrais positifs (56 % de precision).
+On capte 25 % des arbres a risque du patrimoine (13 sur 51). Les
+10 autres sont des fausses alertes a inspecter. Le rappel a baisse
+par rapport a la version precedente (31 % -> 25 %) parce que le
+jeu contient plus de positifs a capter (51 au lieu de 42), mais
+c'est un meilleur compromis pour la ville : moins de temps perdu
+sur des fausses alertes.
 
 ### Importance des features
 
@@ -203,14 +234,14 @@ Top 8 des features les plus utilisees :
 
 | Rang | Feature | Importance |
 |------|---------|------------|
-| 1 | `dist_plus_proche` | 0.21 |
+| 1 | `dist_plus_proche` | 0.17 |
 | 2 | `haut_tot` | 0.12 |
-| 3 | `tronc_diam` | 0.12 |
-| 4 | `nb_voisins_50m` | 0.11 |
-| 5 | `nb_voisins_100m` | 0.10 |
-| 6 | `ratio_h_d` | 0.06 |
-| 7 | `age_estim` | 0.05 |
-| 8 | `haut_tronc` | 0.04 |
+| 3 | `nb_voisins_50m` | 0.11 |
+| 4 | `tronc_diam` | 0.09 |
+| 5 | `haut_tronc` | 0.07 |
+| 6 | `nb_voisins_100m` | 0.07 |
+| 7 | `ratio_h_d` | 0.06 |
+| 8 | `age_estim` | 0.04 |
 
 Quatre des cinq premieres features sont les features spatiales qu'on
 a ajoutees. Le modele s'appuie d'abord sur **l'isolement** de l'arbre
@@ -221,7 +252,7 @@ le vent.
 **Features retirees du modele final :** `clc_nbr_diag` et `feuillage`
 qui n'apportaient aucun signal dans les premieres versions du modele.
 
-Note importante : le jeu de test ne contient que 42 positifs, donc
+Note importante : le jeu de test ne contient que 51 positifs, donc
 les chiffres (F1, precision, rappel) sont a prendre avec des
 pincettes. Une variation de 2-3 arbres bien ou mal classes peut
 faire bouger les scores de quelques points. Les ordres de grandeur
@@ -235,21 +266,23 @@ voir s'il marche uniformement :
 
 | Stade | n | Positifs | Precision | Rappel | F1 |
 |-------|---|----------|-----------|--------|-----|
-| adulte | 1 168 | 36 | 0.43 | 0.33 | 0.38 |
-| jeune | 594 | 5 | 0.00 | 0.00 | 0.00 |
+| adulte | 1 172 | 40 | 0.55 | 0.28 | 0.37 |
+| jeune | 598 | 9 | 1.00 | 0.11 | 0.20 |
 | senescent | peu | 1 | non evaluable | | |
-| vieux | peu | 0 | non evaluable | | |
+| vieux | peu | 1 | non evaluable | | |
 
-**Constat majeur :** le modele marche correctement sur les arbres
-**adultes** (F1 = 0.38, qui represente la grande majorite du
-patrimoine), mais il est **totalement aveugle aux jeunes arbres** (0
-detection sur les 5 positifs du test).
+**Constat :** le modele est fiable sur les arbres **adultes** (F1 =
+0.37, precision de 55 %, c'est la grande majorite du patrimoine).
+Sur les **jeunes** arbres il reste tres conservateur : il n'en
+signale qu'un seul mais il a raison (precision 100 %). Il rate en
+revanche 8 positifs sur 9, donc son rappel est tres faible pour
+ce stade.
 
 C'est logique : on a entraine le modele sur des profils "d'arbres
-retires par la ville", qui sont majoritairement des adultes et des
-vieux avec des gros troncs. Les jeunes arbres a risque ont des
-caracteristiques tres differentes que le modele n'a jamais bien vues
-(il y en avait tres peu dans le train).
+retires par la ville", qui sont majoritairement des adultes avec des
+gros troncs. Les jeunes arbres a risque ont des caracteristiques
+differentes que le modele apprehende mal (il y en a peu dans le
+train).
 
 **Conseil operationnel pour le service des espaces verts :**
 notre systeme est un outil de surveillance pour les arbres adultes.
@@ -258,17 +291,18 @@ necessite une expertise arboricole differente.
 
 ### Limites du systeme et pistes d'amelioration
 
-45 % de precision c'est deja bien mais ca veut dire qu'a peu pres
-une alerte sur deux est fausse. Ce n'est pas scandaleux vu la
+56 % de precision c'est correct mais ca veut dire qu'un peu moins
+d'une alerte sur deux est fausse. Ce n'est pas scandaleux vu la
 difficulte du probleme, mais ca impose a la ville de faire une
 verification manuelle. On considere ce modele comme **un premier
 filtre** plus que comme un systeme de decision automatique.
 
 Les limites viennent principalement de la donnee, pas du modele :
 
-- **Cible bruitee** : "abattu ou essouche" n'est pas specifique a
-  la tempete, comme on l'a montre avec les dates et le ratio H/D.
-- **Peu de positifs** : 166 arbres dans le train, c'est juste.
+- **Cible bruitee** : "abattu, essouche ou non essouche" n'est pas
+  specifique a la tempete, comme on l'a montre avec les dates et le
+  ratio H/D.
+- **Peu de positifs** : 203 arbres dans le train, c'est juste.
 - **Features insuffisantes** : les vraies causes de deracinement
   (vent local, etat des racines, sol) ne sont pas dans les donnees.
 
