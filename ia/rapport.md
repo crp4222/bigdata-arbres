@@ -127,6 +127,164 @@ reutilises sans re-entrainement.
 
 ---
 
+## Besoin client 2 – Modèle de prédiction de l’âge
+
+### Definir ce qu'on veut predire
+
+Le besoin dit qu'on doit predire l'âge des arbres. Le probleme c'est 
+que les donnees ne contiennent pas cette information. La colonne la 
+plus proche c'est `age_estim`, qui est juste une estimation de l'âge.
+
+Cette variable étant réelle, il a été décidé d'utiliser la méthode
+par régression (qui est plus logique qu'une méthode de classification
+dans ce cas).
+
+### Préparation des données
+
+**D'abord, on a dû décidé des caractéristique qui pourrait nous aider à**
+**déterminé l'âge**. On a tout d'abord retirer les composants qui ne serait 
+pas utilise (id, nom des arbres, ...), ce qui nous laisse les composants
+suivants :
+
+- "haut_tot", "haut_tronc", "tronc_diam", "fk_arb_etat", "fk_stadedev", 
+"fk_port", "fk_pied", "fk_revetement", "age_estim"
+
+Ensuite, on a ensuite encoder les variables de type "object" (mise des 
+variables à chaine de caractère en nombre) pour ensuite faire une analyse
+de corrélation avec la variable `age_estim` :
+
+| Variables             | corrélation |
+| --------------------- | ----------- |
+| haut_tot              | 0.587       |
+| haut_tronc            | 0.515       |
+| tronc_diam            | 0.759       |
+| fk_arb_etat           | 0.129       |
+| fk_stadedev           | -0.487      |
+| fk_port               | 0.284       |
+| fk_pied               | -0.130      |
+| fk_revetement         | 0.097       |
+| age_estim             | 1.000       |
+
+Au vue des corrélations, on a décidé de garder les 4 caractéristiques suivants :
+
+- haut_tot
+- haut_tronc
+- tronc_diam
+- fk_stadedev
+
+Enfin, pour finir, on a décidé d'enlever les valeurs vides dans les données 
+(on perd 18% des données mais on a au moins la certitude de ne pas biaisé les 
+modèles) et on sépare les données en deux (entrainement et test) et un scaler 
+pour éviter les grands valeurs qui pourrait être présent dans les données.
+
+### Création des modèles
+
+Pour les modèles, on est parti sur trois types de modèles :
+
+- LinearRegression
+- DecisionTreeRegressor
+- RandomForestRegressor
+
+Dans ces trois modèles, on les à entrainé avec les données d'entrainement puis 
+on a testé des prédictions avec les données de test pour ressortir les métriques 
+suivants :
+
+| Modele                | MSE         | RMSE          | MAE     | R2            |
+| --------------------- | ----------- | ------------- | ------- | ------------- |
+| Regression linéaire   | 134.72      | 11.61         | 8.39    | 0.65          |
+| Decision Tree         | 130.96      | 11.44         | 6.89    | 0.66          |
+| Random Forest         | 153.93      | 12.41         | 8.98    | 0.60          |
+
+Les métriques 1 à 3 (MSE, RMSE et MAE) permet de savoir l'erreur que font les 
+modèles et le R2 permet de savoir si le modèle arrive bien à prédire l'âge.
+
+MSE = Erreur quadratique moyenne
+RMSE = Racine carrée du MSE
+MAE = Erreur absolue moyenne
+R2 = Mesure la qualité globale du modèle
+
+On va que nos modèles sont plutôt correcte dans l'ensemble.
+
+On a aussi des tableaux des résultats sur les modèles pour voir plus précisement
+ les prédiction :
+
+Regression linéaire :
+
+| y_vrai                | y_pred      |
+| --------------------- | ----------- |
+| 20.0                  | 22.867247   |
+| 30.0                  | 30.442821   |
+| 50.0                  | 61.291795   |
+| 50.0                  | 29.380400   |
+| 50.0                  | 37.817794   |
+
+Decision Tree :
+
+| y_vrai                | y_pred      |
+| --------------------- | ----------- |
+| 20.0                  | 20.000000   |
+| 30.0                  | 46.000000   |
+| 50.0                  | 50.000000   |
+| 50.0                  | 32.222222   |
+| 50.0                  | 40.000000   |
+
+Random Forest :
+
+| y_vrai                | y_pred      |
+| --------------------- | ----------- |
+| 20.0                  | 33.500784   |
+| 30.0                  | 33.696710   |
+| 50.0                  | 42.442481   |
+| 50.0                  | 33.696710   |
+| 50.0                  | 42.442481   |
+
+### Optimisation des modèles
+
+Pour la régression linéaire, il n'y a pas d'optimisation possible car pas
+d'hyperparamètres (on ne pourra pas faire mieux).
+
+Par contre, pour les modèles Decision Tree et Random Forest, des 
+hyperparamètres sont possibles.
+
+- "n_estimators" (pour Random Forest) = Nombre d’arbres dans la forêt
+- "max_depth" = Profondeur maximale d’un arbre
+- "min_samples_split" = Nombre minimum d’échantillons requis pour diviser un nœud
+- "min_samples_leaf" = Nombre minimum d’échantillons dans une feuille
+- "max_features" = Nombre de variables considérées à chaque split.
+
+On a choisi quelques paramètres à tester pour, au final, générer deux 
+nouveaux modèles optimisé :
+
+| Modele                | MSE         | RMSE          | MAE     | R2            |
+| --------------------- | ----------- | ------------- | ------- | ------------- |
+| Decision Tree         | 102.28      | 10.11         | 6.69    | 0.74          |
+| Random Forest         | 87.96       | 9.38          | 6.56    | 0.77          |
+
+Tableaux des résultats sur les données de test :
+
+Decision Tree :
+
+| y_vrai                | y_pred      |
+| --------------------- | ----------- |
+| 20.0                  | 20.000000   |
+| 30.0                  | 37.805369   |
+| 50.0                  | 80.000000   |
+| 50.0                  | 32.831858   |
+| 50.0                  | 37.440299   |
+
+Random Forest :
+
+| y_vrai                | y_pred      |
+| --------------------- | ----------- |
+| 20.0                  | 21.990205   |
+| 30.0                  | 38.655179   |
+| 50.0                  | 55.886542   |
+| 50.0                  | 32.685126   |
+| 50.0                  | 37.933871   |
+
+On peut donc voir que les modèles ont était quand même amélioré.
+
+
 ## Besoin client 3 - Systeme d'alerte pour les tempetes
 
 ### Definir ce qu'on veut predire
