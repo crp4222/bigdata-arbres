@@ -17,22 +17,25 @@ from pathlib import Path
 
 # Dictionnaire des modèles
 models = {
-    1: ("Linear Regression", Path(__file__).resolve().parent / "linear_regression.pkl"),
-    2: ("Decision Tree", Path(__file__).resolve().parent / "decision_tree.pkl"),
-    3: ("Random Forest", Path(__file__).resolve().parent / "random_forest.pkl")
+    1: ("Linear Regression", Path(__file__).resolve().parent / "Models/linear_regression.pkl"),
+    2: ("Decision Tree", Path(__file__).resolve().parent / "Models/decision_tree.pkl"),
+    3: ("Random Forest", Path(__file__).resolve().parent / "Models/random_forest.pkl")
 }
 
 # Charger le scaler (version 1.6.1)
-chemin_scaler = Path(__file__).resolve().parent / "scaler.pkl"
+chemin_scaler = Path(__file__).resolve().parent / "Models/scaler.pkl"
 scaler = joblib.load(chemin_scaler)
 
 # Charger l'encoder
-chemin_encoder = Path(__file__).resolve().parent / "encoder.pkl"
+chemin_encoder = Path(__file__).resolve().parent / "Models/encoder.pkl"
 encoder = joblib.load(chemin_encoder)
 
 def parser_arguments():
     """
     Fonction pour passer les paramètres en ligne de commande
+
+    return:
+    Les arguments
     """
     p = argparse.ArgumentParser(description="Prediction de l'âge d'un arbre")
 
