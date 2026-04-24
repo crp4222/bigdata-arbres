@@ -5,7 +5,7 @@ On part du CSV nettoye par la partie Big Data (arbres_clean.csv) et on
 construit un fichier specifique : data.csv, avec les features utiles et
 une cible binaire y.
 
-Choix retenus (voir rapport, section Besoin 3) :
+Choix retenus :
 - y = 1 si l'arbre est "abattu" ou "essouche" (equivalent "a risque")
 - y = 0 si l'arbre est "en place"
 - les autres etats (remplace, supprime, non essouche) sont exclus
@@ -30,7 +30,7 @@ print("Lignes au depart :", len(df))
 # 1. Construction de la cible binaire
 # on inclut "non essouche" dans les positifs : ce sont aussi des arbres
 # abattus (juste avec la souche laissee) et leur ajout ameliore nettement
-# les perfs des modeles a arbres (voir rapport section "revision de la cible")
+# les perfs des modeles a arbres
 a_risque = ["abattu", "essouche", "non essouche"]
 pas_a_risque = ["en place"]
 
@@ -41,7 +41,7 @@ print("Lignes apres filtre etat :", len(df))
 
 # 2. Feature "ratio H/D" (hauteur sur diametre en metres).
 # On a garde cette feature meme si elle s'est averee peu informative
-# (voir rapport) : elle est defendable scientifiquement et permet au
+# elle est defendable scientifiquement et permet au
 # modele de capter les arbres fins et elances en cas exceptionnel.
 df["ratio_h_d"] = df["haut_tot"] / (df["tronc_diam"] / 100)
 
@@ -61,7 +61,7 @@ df["dist_plus_proche"] = dist[:, 1]
 
 # 4. Selection des features
 # Retirees par rapport a la premiere version :
-# - clc_nbr_diag : importance negative dans la permutation importance
+# - clc_nbr_diag : importance negative dans la permutation
 # - feuillage : importance nulle (voir rapport)
 num_features = ["haut_tot", "haut_tronc", "tronc_diam", "age_estim",
                 "ratio_h_d",

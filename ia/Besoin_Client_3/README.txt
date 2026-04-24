@@ -6,8 +6,7 @@ Contenu du dossier
 ------------------
 - data.csv               : jeu de donnees utilise (issu du nettoyage Big Data)
 - 01_prepare_data.py     : script qui produit data.csv
-- notebook.py            : notebook source (cellules delimitees par "# %%")
-- notebook.ipynb         : notebook execute avec outputs (livrable)
+- notebook.ipynb         : notebook d'entrainement + analyses (livrable)
 - modele.pkl             : modele final (ensemble RF+GB calibre) + 2 seuils + BallTree
 - predict.py             : script final CLI pour predire sur un nouvel arbre
 - figures/               : courbes ROC / precision-rappel / importance
