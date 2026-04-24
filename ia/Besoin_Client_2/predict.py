@@ -4,7 +4,7 @@ Script final du besoin client 2 : prédiction de l'âge d'un arbre.
 Le script charge trois modèles déja entrainé et sort l'âge de l'arbre.
 
 Usage :
-  python predict.py --haut_tot 7 --haut_tronc 3  \
+  python predict.py --haut_tot 7 --haut_tronc 2  \
       --tronc_diam 48 --fk_stadedev jeune
 """
 
@@ -77,7 +77,7 @@ def main():
     for choice_model in models:
         model_name, model = load_model(choice_model)
         age = predict_age(model, features)
-        print(f"Âge prédit par {model_name} : {age}")
+        print(f"Âge prédit par {model_name} : {age:.2f}")
 
 if __name__ == "__main__":
     main()
