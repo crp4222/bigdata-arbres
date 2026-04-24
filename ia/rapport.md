@@ -253,11 +253,11 @@ Top 8 des features les plus utilisees :
 | 7 | `ratio_h_d` | 0.06 |
 | 8 | `age_estim` | 0.04 |
 
-Quatre des cinq premieres features sont les features spatiales qu'on
-a ajoutees. Le modele s'appuie d'abord sur **l'isolement** de l'arbre
-(distance au plus proche voisin) avant meme la taille ou l'age.
-C'est coherent avec l'idee physique : un arbre isole se prend plus
-le vent.
+Trois des six premieres features sont les features spatiales qu'on
+a ajoutees, et la premiere de toutes (`dist_plus_proche`) est
+spatiale. Le modele s'appuie d'abord sur l'isolement de l'arbre
+avant meme la taille ou l'age. C'est coherent avec l'idee
+physique : un arbre isole se prend plus le vent.
 
 **Features retirees du modele final :** `clc_nbr_diag` et `feuillage`
 qui n'apportaient aucun signal dans les premieres versions du modele.

@@ -12,7 +12,6 @@ Contenu du dossier
 - figures/               : courbes ROC / precision-rappel / importance
 - README.txt             : ce fichier
 
-
 Utilisation du script final predict.py
 --------------------------------------
 Le script prend les caracteristiques d'un arbre en arguments et renvoie
