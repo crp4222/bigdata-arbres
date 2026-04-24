@@ -8,6 +8,7 @@ Usage :
       --tronc_diam 48 --fk_stadedev jeune
 """
 
+# Bibliothèques utilisé
 import joblib
 import numpy as np
 import pandas as pd
@@ -28,13 +29,6 @@ scaler = joblib.load(chemin_scaler)
 # Charger l'encoder
 chemin_encoder = Path(__file__).resolve().parent / "encoder.pkl"
 encoder = joblib.load(chemin_encoder)
-
-stades = {
-    "adulte": 0.0,
-    "jeune": 1.0,
-    "senescent": 2.0,
-    "vieux": 3.0,
-}
 
 def parser_arguments():
     p = argparse.ArgumentParser(description="Prediction de l'âge d'un arbre")
@@ -64,22 +58,18 @@ def predict_age(model, features):
 
 def main():
     args = parser_arguments()
-
-    try:
-        stade = stades[args.fk_stadedev.lower()]
-    except KeyError:
-        raise ValueError(
-            f"Valeur invalide pour --fk_stadedev : '{args.fk_stadedev.lower()}'. "
-            "Valeurs attendues : adulte, jeune, senescent, vieux."
-        )
     
     hauteur_total = args.haut_tot
     hauteur = args.haut_tronc
     diametre = args.tronc_diam
 
     # Construire le vecteur
+    columns_encoder = ["fk_stadedev"]
+    stade = pd.DataFrame([[
+    args.fk_stadedev.lower()]], columns=columns_encoder)
+    stade_encoding = encoder.transform(stade)
     columns = ["haut_tot", "haut_tronc", "tronc_diam", "fk_stadedev"]
-    features = pd.DataFrame([[hauteur_total, hauteur, diametre, stade]], columns=columns)
+    features = pd.DataFrame([[hauteur_total, hauteur, diametre, stade_encoding[0][0]]], columns=columns)
 
     for choice_model in models:
         model_name, model = load_model(choice_model)
