@@ -21,7 +21,6 @@ stades = {
     "jeune": 1.0,
     "senescent": 2.0,
     "vieux": 3.0,
-    "inconnu": 4.0,
 }
 
 def load_model(choice):
