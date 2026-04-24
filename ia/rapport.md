@@ -4,6 +4,129 @@ Patrimoine arbore de Saint-Quentin - Trinome Elie / Clement / Victor
 
 ---
 
+## Besoin client 1 - Clustering des arbres par taille
+
+### Ce que le client demande
+
+Regrouper les arbres du patrimoine de Saint-Quentin en categories de
+taille et les afficher sur une carte interactive. L'objectif est que
+le service espaces verts puisse visualiser d'un coup d'oeil la
+repartition des grands, moyens et petits arbres sur la ville.
+
+### Pourquoi le clustering et pas une regle manuelle
+
+On aurait pu simplement dire "un arbre en dessous de 8m c'est petit,
+au-dessus de 15m c'est grand". Mais ca serait arbitraire. Le
+clustering laisse les donnees parler d'elles-memes : l'algorithme
+trouve les seuils naturels dans la distribution reelle des arbres de
+Saint-Quentin. C'est plus objectif et adapte au patrimoine local.
+
+On a utilise K-Means, qui est l'algorithme de clustering le plus
+standard. Il regroupe les points en K groupes en minimisant la
+distance de chaque point a son centre de groupe (centroide).
+
+### Choix des variables
+
+On n'a garde que deux variables pour caracteriser la taille :
+
+- `haut_tot` : la hauteur totale en metres
+- `tronc_diam` : le diametre du tronc en centimetres
+
+Ces deux variables sont complementaires : un grand arbre a en general
+une hauteur elevee ET un gros tronc. On aurait pu ajouter l'age ou
+l'espece mais ca aurait melange "taille" et "nature de l'arbre", ce
+qui ne correspond pas au besoin.
+
+Apres suppression des lignes sans mesures, on travaille sur
+**11 227 arbres**.
+
+### Normalisation obligatoire
+
+K-Means calcule des distances entre points. Sans normalisation,
+`tronc_diam` (entre 3 et 395 cm) aurait eu un poids 10 fois plus
+grand que `haut_tot` (entre 1 et 37 m) juste parce que ses valeurs
+sont plus grandes. Les groupes auraient ete formes presque uniquement
+sur le diametre.
+
+On a utilise `StandardScaler` qui ramene chaque variable a une
+moyenne de 0 et un ecart-type de 1. Le scaler est sauvegarde avec
+le modele pour appliquer exactement la meme transformation sur de
+nouveaux arbres.
+
+### Trouver le bon nombre de groupes
+
+On ne savait pas combien de categories creer. On a donc teste K=2 a
+K=6 et mesure la qualite avec trois indicateurs :
+
+- **Silhouette** : entre -1 et 1, mesure si chaque arbre est bien
+  dans son groupe (proche de ses voisins, loin des autres groupes).
+  Plus c'est proche de 1, mieux c'est.
+- **Calinski-Harabasz** : ratio entre la dispersion entre groupes et
+  la compacite interne. Plus c'est eleve, mieux c'est.
+- **Davies-Bouldin** : mesure la confusion entre groupes voisins.
+  Plus c'est bas, mieux c'est.
+
+| K   | Inertie | Silhouette | Calinski-Harabasz | Davies-Bouldin |
+| --- | ------- | ---------- | ----------------- | -------------- |
+| 2   | 9574    | **0.518**  | **15100**         | **0.744**      |
+| 3   | 6323    | 0.435      | 14317             | 0.847          |
+| 4   | 4914    | 0.424      | 13354             | 0.895          |
+| 5   | 3971    | 0.408      | 13058             | 0.868          |
+| 6   | 3409    | 0.393      | 12536             | 0.874          |
+
+Les trois indicateurs pointent vers K=2. Mais la consigne demande
+explicitement trois categories (petits / moyens / grands) pour
+repondre au besoin metier. K=3 reste acceptable avec un Silhouette
+a 0.44, ce qui correspond a une separation correcte. C'est un choix
+delibere : on ne suit pas aveuglément les metriques quand le besoin
+client est clair.
+
+### Resultats du clustering (K=3)
+
+Apres entrainement, on a calcule les caracteristiques moyennes de
+chaque groupe pour leur attribuer un nom :
+
+| Categorie     | Hauteur moyenne | Diametre moyen |
+| ------------- | --------------- | -------------- |
+| Petits arbres | 5.4 m           | 42 cm          |
+| Arbres moyens | 9.7 m           | 92 cm          |
+| Grands arbres | 17.8 m          | 173 cm         |
+
+Les groupes sont bien distincts et interpretables. Le nommage est
+fait automatiquement en triant les clusters par hauteur moyenne
+croissante, ce qui garantit que "petits" designe toujours le groupe
+le plus bas quelle que soit la numerotation interne de K-Means.
+
+### Carte interactive
+
+Les coordonnees du fichier source sont en projection Lambert (EPSG:3949),
+un format cartographique francais en metres. Plotly attend de la
+latitude/longitude standard (WGS84). On a converti avec `pyproj`
+avant de generer la carte.
+
+Le resultat est un fichier HTML (`carte_arbres.html`) qui s'ouvre
+dans n'importe quel navigateur sans installation. Chaque arbre est
+represente par un point colore selon sa categorie (vert = petits,
+orange = moyens, rouge = grands), avec la hauteur et le diametre
+affichables au survol.
+
+### Livrable final
+
+Le script `script_besoin1.py` charge les modeles sauvegardes (`.pkl`)
+et classe un nouvel arbre en une fraction de seconde a partir de sa
+hauteur et de son diametre :
+
+```
+python script_besoin1.py --haut_tot 8 --tronc_diam 90
+-> Categorie : Arbres moyens
+```
+
+Le script supporte K=2, 3 ou 4 categories selon le besoin.
+Les modeles sont sauvegardes une seule fois depuis le notebook et
+reutilises sans re-entrainement.
+
+---
+
 ## Besoin client 3 - Systeme d'alerte pour les tempetes
 
 ### Definir ce qu'on veut predire
@@ -57,11 +180,11 @@ Une fois le premier modele en place on a voulu verifier. Un arbre
 c'est aussi un arbre retire et pas un arbre "en place". On a re-entraine
 en les comptant comme positifs et on a compare.
 
-| Modele | AUC-PR sans | AUC-PR avec | F1 sans | F1 avec |
-|--------|-------------|-------------|---------|---------|
-| Regression logistique | 0.172 | 0.161 | 0.197 | 0.208 |
-| Random Forest | 0.239 | 0.264 (+10 %) | 0.324 | 0.370 (+14 %) |
-| Gradient Boosting | 0.236 | 0.284 (+20 %) | 0.329 | 0.348 |
+| Modele                | AUC-PR sans | AUC-PR avec   | F1 sans | F1 avec       |
+| --------------------- | ----------- | ------------- | ------- | ------------- |
+| Regression logistique | 0.172       | 0.161         | 0.197   | 0.208         |
+| Random Forest         | 0.239       | 0.264 (+10 %) | 0.324   | 0.370 (+14 %) |
+| Gradient Boosting     | 0.236       | 0.284 (+20 %) | 0.329   | 0.348         |
 
 Le gain est net sur RF et GB. On a donc garde :
 
@@ -140,6 +263,7 @@ On a decoupe les donnees en train (80 %) et test (20 %) de maniere
 stratifiee, avec `random_state=42` pour la reproductibilite.
 
 Le pipeline de pretraitement :
+
 - pour les numeriques : `StandardScaler` (centrer, reduire)
 - pour les categorielles : `SimpleImputer` (NA -> "inconnu") puis
   `OneHotEncoder` avec `handle_unknown="ignore"`
@@ -152,11 +276,11 @@ sauvegarde d'un seul bloc dans le fichier `modele.pkl`.
 On a teste trois classificateurs sur les memes features (cible
 revisee, 254 positifs) :
 
-| Modele | AUC-ROC | AUC-PR | F1 optimal | Precision | Rappel | Alertes |
-|--------|---------|--------|------------|-----------|--------|---------|
-| Regression logistique | 0.776 | 0.161 | 0.208 | 14 % | 37 % | 132 |
-| Random Forest | 0.842 | 0.264 | 0.370 | 32 % | 43 % | 68 |
-| Gradient Boosting | 0.851 | 0.284 | 0.348 | 31 % | 39 % | 64 |
+| Modele                | AUC-ROC | AUC-PR | F1 optimal | Precision | Rappel | Alertes |
+| --------------------- | ------- | ------ | ---------- | --------- | ------ | ------- |
+| Regression logistique | 0.776   | 0.161  | 0.208      | 14 %      | 37 %   | 132     |
+| Random Forest         | 0.842   | 0.264  | 0.370      | 32 %      | 43 %   | 68      |
+| Gradient Boosting     | 0.851   | 0.284  | 0.348      | 31 %      | 39 %   | 64      |
 
 Le Random Forest et le Gradient Boosting se tiennent de pres, avec
 un leger avantage au GB sur l'AUC (ranking global). On l'a choisi
@@ -185,6 +309,7 @@ Avec seulement ~203 positifs en train, les arbres trop profonds
 trouvent des motifs qui n'existent pas.
 
 La grille conservatrice a converge vers :
+
 - `learning_rate = 0.05`, `max_depth = 3`, `n_estimators = 200`
 - `min_samples_leaf = 5`, `subsample = 1.0`
 
@@ -198,11 +323,11 @@ de zero, c'est difficile ensuite de choisir un seuil propre.
 
 Sur le test (1 781 arbres, 51 positifs) :
 
-| Modele | AUC-ROC | AUC-PR | F1 optimal |
-|--------|---------|--------|------------|
-| GB seul (grid search) | 0.853 | 0.252 | 0.351 |
-| RF calibre | 0.857 | 0.260 | 0.374 |
-| Ensemble calibre RF + GB | 0.856 | 0.309 | 0.404 |
+| Modele                   | AUC-ROC | AUC-PR | F1 optimal |
+| ------------------------ | ------- | ------ | ---------- |
+| GB seul (grid search)    | 0.853   | 0.252  | 0.351      |
+| RF calibre               | 0.857   | 0.260  | 0.374      |
+| Ensemble calibre RF + GB | 0.856   | 0.309  | 0.404      |
 
 L'AUC-PR gagne 22 % et le F1 gagne 15 %. On n'a touche ni aux
 donnees ni aux features, c'est uniquement du traitement post-modele.
@@ -217,16 +342,17 @@ rappel. On prefere sortir deux listes :
 
 Ce que ca donne sur le test :
 
-| Liste | Seuil | Alertes | Vrais positifs | Precision | Rappel |
-|-------|-------|---------|----------------|-----------|--------|
-| Urgent | 0.185 | 32 | 15 | 47 % | 29 % |
-| Surveillance | 0.075 | 157 | 27 | 17 % | 53 % |
+| Liste        | Seuil | Alertes | Vrais positifs | Precision | Rappel |
+| ------------ | ----- | ------- | -------------- | --------- | ------ |
+| Urgent       | 0.185 | 32      | 15             | 47 %      | 29 %   |
+| Surveillance | 0.075 | 157     | 27             | 17 %      | 53 %   |
 
 En cumulant les deux, on capte 27 arbres a risque sur 51, soit 53 %.
 C'est le double du rappel d'avant (25 %) sans noyer la ville sous
 des alertes inutiles.
 
 En pratique :
+
 - liste urgente : 32 arbres, 15 vrais a inspecter rapidement
 - liste surveillance : 157 arbres, a etaler sur l'annee
 
@@ -242,16 +368,16 @@ est eleve).
 
 Top 8 des features les plus utilisees :
 
-| Rang | Feature | Importance |
-|------|---------|------------|
-| 1 | `dist_plus_proche` | 0.17 |
-| 2 | `haut_tot` | 0.12 |
-| 3 | `nb_voisins_50m` | 0.11 |
-| 4 | `tronc_diam` | 0.09 |
-| 5 | `haut_tronc` | 0.07 |
-| 6 | `nb_voisins_100m` | 0.07 |
-| 7 | `ratio_h_d` | 0.06 |
-| 8 | `age_estim` | 0.04 |
+| Rang | Feature            | Importance |
+| ---- | ------------------ | ---------- |
+| 1    | `dist_plus_proche` | 0.17       |
+| 2    | `haut_tot`         | 0.12       |
+| 3    | `nb_voisins_50m`   | 0.11       |
+| 4    | `tronc_diam`       | 0.09       |
+| 5    | `haut_tronc`       | 0.07       |
+| 6    | `nb_voisins_100m`  | 0.07       |
+| 7    | `ratio_h_d`        | 0.06       |
+| 8    | `age_estim`        | 0.04       |
 
 Trois des six premieres features sont les features spatiales qu'on
 a ajoutees, et la premiere de toutes (`dist_plus_proche`) est
@@ -274,12 +400,12 @@ croisee.
 On a evalue le modele separement par stade de developpement pour
 voir s'il marche uniformement :
 
-| Stade | n | Positifs | Precision | Rappel | F1 |
-|-------|---|----------|-----------|--------|-----|
-| adulte | 1 172 | 40 | 0.55 | 0.28 | 0.37 |
-| jeune | 598 | 9 | 1.00 | 0.11 | 0.20 |
-| senescent | peu | 1 | non evaluable | | |
-| vieux | peu | 1 | non evaluable | | |
+| Stade     | n     | Positifs | Precision     | Rappel | F1   |
+| --------- | ----- | -------- | ------------- | ------ | ---- |
+| adulte    | 1 172 | 40       | 0.55          | 0.28   | 0.37 |
+| jeune     | 598   | 9        | 1.00          | 0.11   | 0.20 |
+| senescent | peu   | 1        | non evaluable |        |      |
+| vieux     | peu   | 1        | non evaluable |        |      |
 
 **Constat :** le modele est fiable sur les arbres **adultes** (F1 =
 0.37, precision de 55 %, c'est la grande majorite du patrimoine).
