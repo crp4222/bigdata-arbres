@@ -9,7 +9,7 @@ Contenu du dossier
 - notebook.ipynb         : notebook d'entrainement + analyses (livrable)
 - modele.pkl             : modele final (ensemble RF+GB calibre) + 2 seuils + BallTree
 - predict.py             : script final CLI pour predire sur un nouvel arbre
-- figures/               : courbes ROC / precision-rappel / importance
+- figures/               : courbe precision-rappel + importance des features
 - README.txt             : ce fichier
 
 Utilisation du script final predict.py
